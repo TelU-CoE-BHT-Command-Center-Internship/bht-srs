@@ -421,10 +421,173 @@ Batasan desain dan implementasi tersebut menjadi acuan selama proses pengembanga
 <!-- interactions with physical devices (types, signals, etc) -->
 
 #### 3.1.3 Software Interfaces
-<!-- integrations with other systems (APIs, contracts, owner, etc) -->
+
+BHT-Nexus berinteraksi dengan sejumlah sistem perangkat lunak eksternal dalam proses pengumpulan data akademik dan penelitian yang dibutuhkan untuk mendukung operasional sistem. Interaksi tersebut dilakukan melalui mekanisme akses berbasis HTTP terhadap halaman publik yang disediakan oleh masing-masing platform, tanpa menggunakan mekanisme autentikasi resmi. Pendekatan ini dipilih karena data yang dibutuhkan tersedia secara publik sehingga integrasi dapat dilakukan tanpa memerlukan izin akses khusus.
+
+Namun demikian, ketersediaan dan kelengkapan data yang dapat diperoleh bergantung pada kebijakan dan mekanisme akses yang diterapkan oleh masing-masing platform. Pada sistem yang menerapkan pembatasan akses seperti verifikasi CAPTCHA atau mekanisme *sign-in*, proses pengumpulan data dilakukan secara *best-effort* dan kegagalan akses dianggap sebagai perilaku yang diharapkan (*expected behavior*).
+
+| Sistem Eksternal | Deskripsi | Mekanisme Akses | Catatan |
+| ---------------- | --------- | --------------- | ------- |
+| **SINTA** (*Science and Technology Index*) | Portal nasional ilmu pengetahuan dan teknologi Indonesia yang dikelola Kementerian Pendidikan, Kebudayaan, Riset, dan Teknologi, menyediakan informasi profil peneliti dan publikasi akademik secara publik | HTTP GET ke halaman profil publik | Tidak memerlukan autentikasi; data dapat diakses tanpa pembatasan |
+| **Google Scholar** | Mesin pencari akademik milik Google yang menyediakan informasi profil peneliti dan metadata publikasi ilmiah | HTTP GET ke halaman profil dan pencarian publik | *Best-effort*; rentan terhadap pemblokiran CAPTCHA dan pengalihan ke halaman *sign-in*; kegagalan akses merupakan *expected behavior* |
+
+Integrasi dengan SINTA merupakan integrasi primer yang dapat diandalkan untuk pengumpulan data peneliti dan publikasi CoE BHT, sedangkan integrasi dengan Google Scholar bersifat sekunder dan tidak dijamin ketersediaannya. Ketergantungan terhadap kedua sistem eksternal tersebut harus dipertimbangkan agar sistem tetap dapat beroperasi meskipun salah satu sumber data tidak dapat diakses.
+
+- ID: REQ-INT-001
+- Title: Akses Publik SINTA
+- Statement: Sistem wajib mengakses halaman profil publik SINTA melalui HTTP GET tanpa menggunakan mekanisme autentikasi.
+- Rationale: SINTA menyediakan data profil peneliti dan publikasi secara publik sehingga integrasi dapat dilakukan tanpa autentikasi, menyederhanakan proses integrasi dan mengurangi risiko kegagalan akibat perubahan kredensial.
+- Acceptance Criteria:
+  - Sistem berhasil mengambil data dari halaman profil SINTA tanpa menggunakan token autentikasi atau kredensial apa pun.
+  - Sistem mengembalikan data yang sesuai dengan halaman profil yang diakses.
+- Verification Method: Test
+- More Information: -
+
+- ID: REQ-INT-002
+- Title: Akses *Best-Effort* Google Scholar
+- Statement: Sistem wajib berupaya mengakses halaman profil dan pencarian Google Scholar melalui HTTP GET; kegagalan akibat pemblokiran CAPTCHA atau pengalihan halaman *sign-in* wajib dicatat sebagai *attempt log* dan tidak menyebabkan kegagalan sistem secara keseluruhan.
+- Rationale: Google Scholar dapat melengkapi data dari SINTA, namun platform tersebut menerapkan mekanisme pembatasan akses yang dapat mengakibatkan kegagalan pengumpulan data sewaktu-waktu. Integrasi dirancang sebagai upaya terbaik tanpa menjamin keberhasilan akses.
+- Acceptance Criteria:
+  - Sistem mencatat setiap percobaan akses ke Google Scholar beserta statusnya dalam *attempt log*.
+  - Kegagalan akses ke Google Scholar tidak mengakibatkan kegagalan proses pengumpulan data dari SINTA.
+  - Sistem tidak mencoba mem-*bypass* mekanisme CAPTCHA atau autentikasi Google Scholar.
+- Verification Method: Test
+- More Information: -
 
 ### 3.2 Functions
-<!-- externally observable behaviors organized by feature/use case -->
+
+Bagian ini mendefinisikan kebutuhan fungsional BHT-Nexus yang berkaitan dengan dua fitur utama yang saat ini sedang dikembangkan, yaitu pengumpulan data akademik (*academic data scraper*) dan tanya jawab dokumen berbasis *Retrieval-Augmented Generation* (RAG). Kedua fitur tersebut bersifat saling melengkapi: *scraper* berperan sebagai komponen pengumpul data dari sumber eksternal, sedangkan RAG berperan sebagai komponen yang memungkinkan pengguna memperoleh informasi dari dokumen internal melalui kueri *natural language*.
+
+Kebutuhan fungsional pada bagian ini disusun berdasarkan perilaku sistem yang dapat diobservasi dari luar (*externally observable behavior*) dan tidak menjelaskan mekanisme implementasi internal. Setiap kebutuhan diformulasikan sebagai pernyataan yang dapat diverifikasi dan ditelusuri kembali (*traceable*) ke kebutuhan bisnis yang telah diidentifikasi pada Bab 2.
+
+#### Pengumpulan Data Akademik
+
+Komponen pengumpulan data akademik bertanggung jawab mengambil metadata profil peneliti dan publikasi dari sumber eksternal yang telah ditetapkan, menyimpan hasilnya dalam format yang dapat digunakan kembali, serta mencatat seluruh percobaan pengumpulan data untuk keperluan audit dan penanganan kegagalan.
+
+- ID: REQ-FUNC-001
+- Title: Pengumpulan Metadata Profil dari SINTA
+- Statement: Sistem wajib mengumpulkan metadata profil *author* dari halaman publik SINTA, meliputi nama, *source ID*, institusi, departemen, dan URL profil.
+- Rationale: Informasi profil peneliti dari SINTA diperlukan untuk mengidentifikasi dan menghubungkan data publikasi dengan anggota CoE BHT secara akurat.
+- Acceptance Criteria:
+  - Sistem berhasil mengekstrak nama, *source ID*, institusi, departemen, dan URL profil dari halaman profil SINTA yang valid.
+  - Data yang diekstrak disimpan dalam format yang telah ditetapkan (CSV, JSONL, atau SQLite).
+- Verification Method: Test
+- More Information: Lihat REQ-INT-001 untuk spesifikasi mekanisme akses SINTA.
+
+- ID: REQ-FUNC-002
+- Title: Pengumpulan Metadata Publikasi dari SINTA
+- Statement: Sistem wajib mengumpulkan metadata publikasi dari halaman publik SINTA, meliputi judul, tahun, tipe karya, *venue*, daftar *author*, *external ID*, *source URL*, URL resmi apabila dapat diselesaikan, DOI apabila dapat diselesaikan, dan jumlah sitasi apabila tersedia.
+- Rationale: Metadata publikasi diperlukan untuk menyusun daftar karya ilmiah anggota CoE BHT yang akurat dan dapat digunakan sebagai referensi dalam sistem.
+- Acceptance Criteria:
+  - Sistem berhasil mengekstrak seluruh *field* metadata publikasi yang tersedia dari halaman SINTA yang valid.
+  - *Field* yang tidak tersedia pada halaman yang diakses disimpan sebagai nilai kosong tanpa menyebabkan kegagalan proses.
+- Verification Method: Test
+- More Information: Lihat REQ-INT-001 untuk spesifikasi mekanisme akses SINTA.
+
+- ID: REQ-FUNC-003
+- Title: Pengumpulan *Best-Effort* dari Google Scholar
+- Statement: Sistem wajib berupaya mengumpulkan metadata profil dan publikasi dari Google Scholar; apabila akses gagal akibat pemblokiran CAPTCHA atau pengalihan halaman *sign-in*, kegagalan tersebut wajib dicatat dalam *attempt log* dan tidak menghentikan proses pengumpulan data secara keseluruhan.
+- Rationale: Google Scholar dapat melengkapi data dari SINTA, namun ketersediaannya tidak dapat dijamin akibat mekanisme pembatasan akses yang diterapkan platform. Kegagalan akses dianggap sebagai *expected behavior* dan tidak boleh menyebabkan kegagalan sistem.
+- Acceptance Criteria:
+  - Sistem mencatat setiap percobaan akses ke Google Scholar beserta statusnya (berhasil atau gagal beserta alasan kegagalan) dalam *attempt log*.
+  - Kegagalan akses ke Google Scholar tidak mengakibatkan penghentian proses pengumpulan data dari SINTA.
+  - Sistem tidak mencoba mem-*bypass* mekanisme CAPTCHA atau autentikasi Google Scholar.
+- Verification Method: Test
+- More Information: Lihat REQ-INT-002 untuk spesifikasi mekanisme akses Google Scholar.
+
+- ID: REQ-FUNC-004
+- Title: Penyimpanan Hasil Pengumpulan Data Secara Lokal
+- Statement: Sistem wajib menyimpan hasil pengumpulan data ke penyimpanan lokal dalam format CSV, JSONL, SQLite, dan *Markdown summary*.
+- Rationale: Penyimpanan dalam berbagai format memungkinkan hasil pengumpulan data digunakan kembali untuk berbagai keperluan, termasuk analisis manual, integrasi ke sistem lain, dan penelusuran riwayat pengumpulan data.
+- Acceptance Criteria:
+  - Setelah proses pengumpulan data selesai, sistem menghasilkan setidaknya satu berkas CSV, satu berkas JSONL, satu basis data SQLite, dan satu berkas *Markdown summary*.
+  - Seluruh berkas dapat dibuka dan dibaca tanpa kesalahan format.
+- Verification Method: Test
+- More Information: -
+
+- ID: REQ-FUNC-005
+- Title: Pencatatan *Attempt Log*
+- Statement: Sistem wajib mencatat log setiap percobaan pengumpulan data, meliputi sumber data yang diakses, waktu percobaan, dan hasil percobaan (berhasil atau gagal beserta alasan kegagalan).
+- Rationale: *Attempt log* diperlukan untuk mendukung proses audit, penanganan kegagalan, dan pemantauan kualitas data yang dikumpulkan oleh sistem.
+- Acceptance Criteria:
+  - Setiap percobaan pengumpulan data menghasilkan entri log yang mencatat sumber, waktu, dan status percobaan.
+  - Log dapat diakses dan dibaca setelah proses pengumpulan data selesai.
+- Verification Method: Test
+- More Information: -
+
+- ID: REQ-FUNC-006
+- Title: Eksekusi Manual melalui CLI
+- Statement: Sistem wajib mendukung eksekusi proses pengumpulan data secara manual melalui antarmuka *command-line interface* (CLI); penjadwalan otomatis tidak disyaratkan pada tahap ini.
+- Rationale: Pada tahap pengembangan saat ini, proses pengumpulan data dilakukan secara *on-demand* sesuai kebutuhan tim sehingga antarmuka CLI sudah mencukupi tanpa memerlukan mekanisme penjadwalan otomatis.
+- Acceptance Criteria:
+  - Sistem dapat dijalankan melalui perintah CLI dengan parameter yang mendefinisikan sumber data dan target profil.
+  - Sistem menghasilkan *output* yang dapat dibaca di terminal selama proses berjalan.
+- Verification Method: Demonstration
+- More Information: -
+
+#### Tanya Jawab Dokumen Berbasis RAG
+
+Komponen *Retrieval-Augmented Generation* (RAG) memungkinkan pengguna mengajukan pertanyaan dalam bahasa natural terhadap dokumen internal CoE BHT dan memperoleh jawaban yang disertai referensi dokumen sebagai bukti. Komponen ini beroperasi sepenuhnya secara lokal tanpa memerlukan koneksi ke layanan eksternal pada tahap *proof of concept* (POC).
+
+- ID: REQ-FUNC-007
+- Title: Pengindeksan Dokumen PDF Internal
+- Statement: Sistem wajib mengindeks dokumen PDF internal ke dalam *vector store* lokal untuk mendukung proses pencarian berbasis kemiripan semantik.
+- Rationale: Pengindeksan diperlukan agar sistem dapat mengambil potongan dokumen yang relevan secara efisien berdasarkan kueri pengguna tanpa memindai seluruh dokumen pada setiap kueri.
+- Acceptance Criteria:
+  - Sistem berhasil memproses dan mengindeks dokumen PDF yang diberikan ke dalam *vector store* lokal.
+  - Dokumen yang telah diindeks dapat dicari menggunakan kueri berbasis teks.
+- Verification Method: Test
+- More Information: Lihat REQ-ML-001 dan REQ-ML-002 untuk spesifikasi model yang digunakan.
+
+- ID: REQ-FUNC-008
+- Title: Dukungan Kueri Bahasa Indonesia dan Inggris
+- Statement: Sistem wajib mendukung kueri yang diajukan dalam Bahasa Indonesia maupun Bahasa Inggris dan mengembalikan jawaban yang relevan untuk kedua bahasa tersebut.
+- Rationale: Dokumen internal CoE BHT dan pertanyaan yang diajukan oleh pengguna dapat menggunakan Bahasa Indonesia maupun Bahasa Inggris, sehingga sistem harus mampu menangani kedua bahasa tanpa memerlukan konfigurasi tambahan.
+- Acceptance Criteria:
+  - Kueri dalam Bahasa Indonesia menghasilkan jawaban yang relevan dari dokumen yang diindeks.
+  - Kueri dalam Bahasa Inggris menghasilkan jawaban yang relevan dari dokumen yang diindeks.
+- Verification Method: Test
+- More Information: Lihat REQ-ML-002 untuk spesifikasi model *embedding* multilingual yang digunakan.
+
+- ID: REQ-FUNC-009
+- Title: Pengambilan Potongan Dokumen Relevan
+- Statement: Sistem wajib mengambil potongan dokumen yang relevan berdasarkan kemiripan semantik antara kueri pengguna dan konten dokumen yang telah diindeks.
+- Rationale: Pengambilan potongan dokumen yang relevan merupakan tahap kritis dalam *pipeline* RAG untuk memastikan jawaban yang dihasilkan didasarkan pada informasi yang tepat dari dokumen sumber.
+- Acceptance Criteria:
+  - Sistem mengembalikan potongan dokumen yang secara semantis relevan dengan kueri yang diajukan.
+  - Potongan dokumen yang dikembalikan dapat diidentifikasi berdasarkan dokumen sumber dan nomor halaman.
+- Verification Method: Test
+- More Information: -
+
+- ID: REQ-FUNC-010
+- Title: Generasi Jawaban dengan Referensi Dokumen
+- Statement: Sistem wajib menghasilkan jawaban atas kueri pengguna yang menyertakan referensi dokumen sumber dan nomor halaman sebagai bukti.
+- Rationale: Referensi dokumen diperlukan agar pengguna dapat memverifikasi kebenaran jawaban secara langsung dari sumber, sesuai dengan prinsip transparansi sistem berbasis AI.
+- Acceptance Criteria:
+  - Setiap jawaban yang dihasilkan menyertakan nama dokumen sumber dan nomor halaman yang menjadi dasar jawaban.
+  - Jawaban yang tidak memiliki dukungan dokumen dinyatakan secara eksplisit oleh sistem.
+- Verification Method: Test
+- More Information: Lihat REQ-ML-001 untuk spesifikasi model generasi jawaban.
+
+- ID: REQ-FUNC-011
+- Title: Cakupan Topik Kueri
+- Statement: Sistem wajib dapat menjawab pertanyaan mengenai pendanaan, judul proyek atau penelitian, keterlibatan anggota, tanggal pelaksanaan, luaran, judul *paper*, nama jurnal, DOI, dan ringkasan dokumen berdasarkan konten dokumen yang telah diindeks.
+- Rationale: Jenis pertanyaan tersebut merupakan kebutuhan informasi utama yang diidentifikasi berdasarkan kebutuhan operasional CoE BHT dalam mengelola dan mengakses informasi penelitian dan proyek.
+- Acceptance Criteria:
+  - Sistem menghasilkan jawaban yang relevan untuk setiap jenis pertanyaan di atas apabila informasi tersebut terdapat dalam dokumen yang diindeks.
+  - Apabila informasi tidak ditemukan dalam dokumen, sistem menyatakan hal tersebut secara eksplisit.
+- Verification Method: Demonstration
+- More Information: -
+
+- ID: REQ-FUNC-012
+- Title: Antarmuka CLI untuk Tahap POC
+- Statement: Sistem wajib menyediakan antarmuka CLI sebagai titik interaksi pengguna pada tahap POC; antarmuka berbasis web atau API tidak disyaratkan pada tahap ini.
+- Rationale: Antarmuka CLI mencukupi untuk validasi fungsionalitas RAG pada tahap POC. Modul yang sama dirancang untuk dapat melayani API internal pada tahap pengembangan selanjutnya tanpa perubahan signifikan pada logika inti.
+- Acceptance Criteria:
+  - Pengguna dapat mengajukan kueri dan menerima jawaban melalui antarmuka CLI.
+  - Sistem menampilkan jawaban beserta referensi dokumen di terminal.
+- Verification Method: Demonstration
+- More Information: -
 
 ### 3.3 Quality of Service
 <!-- measurable non-functional attributes section -->
@@ -484,10 +647,76 @@ Batasan desain dan implementasi tersebut menjadi acuan selama proses pengembanga
 <!-- ML-specific requirements section -->
 
 #### 3.6.1 Model Specification
-<!-- model purpose, inputs/outputs, performance targets, validation data, versioning -->
+
+Komponen RAG pada BHT-Nexus menggunakan dua model utama yang beroperasi sepenuhnya secara lokal tanpa memerlukan koneksi ke layanan AI eksternal. Pendekatan lokal ini dipilih untuk menjaga privasi dokumen internal, mengurangi ketergantungan terhadap layanan pihak ketiga, dan memastikan sistem dapat beroperasi dalam lingkungan jaringan yang terbatas.
+
+| Komponen | Model | Tujuan |
+| -------- | ----- | ------ |
+| **Generasi Jawaban** | `llama3.2:3b` melalui Ollama | Menghasilkan jawaban *natural language* berdasarkan konteks yang diambil dari dokumen |
+| ***Embedding*** | `sentence-transformers/paraphrase-multilingual-mpnet-base-v2` | Menghasilkan representasi vektor dari teks untuk mendukung pencarian berbasis kemiripan semantik dalam Bahasa Indonesia dan Bahasa Inggris |
+| ***Vector Store* (POC)** | FAISS lokal dengan metadata SQLite | Menyimpan dan mengindeks vektor dokumen untuk pencarian efisien pada tahap POC |
+| ***Vector Store* (Target)** | PostgreSQL dengan ekstensi `pgvector` | Target migrasi setelah kualitas POC terbukti memenuhi kebutuhan operasional |
+
+- ID: REQ-ML-001
+- Title: Model Generasi Jawaban Lokal
+- Statement: Sistem wajib menggunakan model `llama3.2:3b` melalui Ollama untuk generasi jawaban; sistem tidak boleh menggunakan layanan AI eksternal atau berbasis *cloud* untuk generasi jawaban.
+- Rationale: Penggunaan model lokal memastikan dokumen internal CoE BHT tidak dikirimkan ke layanan pihak ketiga, menjaga kerahasiaan informasi penelitian dan operasional organisasi.
+- Acceptance Criteria:
+  - Sistem menghasilkan jawaban menggunakan model `llama3.2:3b` yang berjalan melalui Ollama di lingkungan lokal.
+  - Tidak ada koneksi jaringan keluar yang dilakukan selama proses generasi jawaban.
+- Verification Method: Test
+- More Information: -
+
+- ID: REQ-ML-002
+- Title: Model *Embedding* Multibahasa
+- Statement: Sistem wajib menggunakan model `sentence-transformers/paraphrase-multilingual-mpnet-base-v2` untuk menghasilkan representasi vektor dari teks kueri dan potongan dokumen.
+- Rationale: Model ini mendukung Bahasa Indonesia dan Bahasa Inggris sehingga sesuai dengan kebutuhan multilingual yang telah ditetapkan pada REQ-FUNC-008.
+- Acceptance Criteria:
+  - Sistem berhasil menghasilkan vektor *embedding* untuk teks dalam Bahasa Indonesia dan Bahasa Inggris.
+  - Vektor *embedding* yang dihasilkan dapat digunakan untuk menghitung kemiripan semantik antar teks.
+- Verification Method: Test
+- More Information: Lihat REQ-FUNC-008 untuk kebutuhan dukungan multibahasa.
+
+- ID: REQ-ML-003
+- Title: *Vector Store* Lokal untuk Tahap POC
+- Statement: Sistem wajib menggunakan FAISS sebagai *vector store* dengan SQLite sebagai penyimpanan metadata pada tahap POC; migrasi ke PostgreSQL dengan ekstensi `pgvector` dilakukan pada tahap selanjutnya setelah kualitas POC terbukti memenuhi kebutuhan.
+- Rationale: FAISS lokal dengan SQLite dipilih untuk tahap POC karena tidak memerlukan infrastruktur basis data tambahan, memungkinkan pengembangan dan validasi yang lebih cepat.
+- Acceptance Criteria:
+  - Sistem mengindeks dan mengambil vektor dokumen menggunakan FAISS lokal.
+  - Metadata dokumen (nama berkas, nomor halaman, dan teks potongan) disimpan dan dapat diakses melalui SQLite.
+- Verification Method: Test
+- More Information: -
 
 #### 3.6.2 Data Management
-<!-- lifecycle of datasets (origin, labeling, anonymization, etc) -->
+
+Pengelolaan data pada komponen RAG dan *scraper* BHT-Nexus mempertimbangkan asal-usul data, mekanisme pengumpulan, proses validasi, serta alur data dari sumber hingga digunakan dalam proses inferensi. Pada tahap saat ini, sumber data primer untuk komponen RAG adalah dokumen PDF internal CoE BHT, sedangkan data hasil *scraper* belum diintegrasikan secara langsung ke dalam *pipeline* RAG dan disimpan sebagai *staging data* yang memerlukan proses *review* sebelum dapat digunakan.
+
+| Aspek | Keterangan |
+| ----- | ---------- |
+| **Sumber Data Primer RAG** | Dokumen PDF internal penelitian dan proyek CoE BHT |
+| **Sumber Data Sekunder RAG** *(future)* | Metadata HTML yang telah disetujui dari *scraper*, seperti metadata Google Scholar; belum aktif pada tahap POC |
+| **Status Data *Scraper*** | Disimpan secara lokal sebagai *staging data*; tidak ditulis langsung ke tabel produksi atau *pipeline* RAG pada tahap ini |
+| **Alur Data *Scraper* ke RAG** | Data *scraper* melewati proses *review* sebelum digunakan sebagai input RAG (*reviewed source adapter*) |
+
+- ID: REQ-ML-004
+- Title: Sumber Data Primer RAG
+- Statement: Sistem wajib menggunakan dokumen PDF internal CoE BHT sebagai sumber data primer untuk pengindeksan dan pengambilan informasi pada komponen RAG.
+- Rationale: Dokumen PDF internal merupakan sumber informasi yang telah tervalidasi dan dapat dipercaya untuk kebutuhan tanya jawab operasional CoE BHT.
+- Acceptance Criteria:
+  - Sistem berhasil memproses dan mengindeks dokumen PDF internal yang diberikan sebagai input.
+  - Jawaban yang dihasilkan didasarkan pada konten dokumen PDF internal yang telah diindeks.
+- Verification Method: Test
+- More Information: Lihat REQ-FUNC-007 untuk kebutuhan pengindeksan dokumen.
+
+- ID: REQ-ML-005
+- Title: Isolasi Data *Scraper* sebagai *Staging*
+- Statement: Sistem wajib menyimpan data hasil *scraper* sebagai *staging data* di penyimpanan lokal; data tersebut tidak boleh ditulis langsung ke tabel produksi BHT-Nexus maupun digunakan sebagai input *pipeline* RAG tanpa melalui proses *review* yang telah ditetapkan.
+- Rationale: Data yang dikumpulkan dari sumber eksternal memerlukan validasi untuk memastikan akurasi dan relevansinya sebelum digunakan dalam sistem produksi. Pendekatan *staging* ini mencegah data yang belum tervalidasi memengaruhi kualitas jawaban yang dihasilkan oleh komponen RAG.
+- Acceptance Criteria:
+  - Data hasil *scraper* disimpan dalam format lokal (CSV, JSONL, SQLite) tanpa penulisan otomatis ke basis data produksi.
+  - Tidak ada mekanisme yang memungkinkan data *scraper* masuk ke *pipeline* RAG secara langsung tanpa proses *review*.
+- Verification Method: Inspection
+- More Information: Lihat REQ-FUNC-004 untuk spesifikasi format penyimpanan hasil *scraper*.
 
 #### 3.6.3 Guardrails
 <!-- controls that the system operates within approved boundaries (validation/sanitation, output filtering, action limits, etc) -->
