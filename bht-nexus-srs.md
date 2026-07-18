@@ -37,6 +37,7 @@ Prepared by {{author}}
 | Name | Date | Reason For Changes | Version |
 |------|------|--------------------|---------|
 | Fa Ainama Caldera S   | 14 Juli 2026     | Pembuatan dokumen srs v1                    |  v1.0.0         |
+| M. Rifqi Dzaky Azhad | 18 Juli 2026 | Revisi alur scraper dan RAG terkelola | v1.1.0 |
 |      |      |                    |         |
 
 ## 1. Introduction
@@ -61,6 +62,8 @@ Pengembangan BHT-Nexus dilatarbelakangi oleh kebutuhan akan sistem yang mampu me
 Melalui BHT-Nexus, CoE BHT diharapkan memiliki platform terintegrasi yang mendukung pengelolaan informasi organisasi secara konsisten, meningkatkan kualitas dokumentasi kegiatan, serta menyediakan informasi yang lebih mudah diakses untuk kebutuhan monitoring, evaluasi, dan pelaporan. Kehadiran sistem ini juga mendukung pengelolaan data yang lebih terstruktur sehingga proses operasional dapat dilaksanakan secara lebih efektif dan berkelanjutan.
 
 Pengembangan BHT-Nexus sejalan dengan upaya CoE BHT dalam memperkuat tata kelola informasi organisasi melalui pemanfaatan teknologi informasi. Dengan menyediakan sumber informasi yang terpusat dan terdokumentasi dengan baik, sistem ini mendukung pengambilan keputusan yang berbasis data serta menjadi fondasi bagi pengelolaan aktivitas organisasi yang lebih transparan, terdokumentasi, dan berkesinambungan.
+
+Dalam batasan sistem, *scraper* dan RAG adalah worker Python terpisah yang dipanggil melalui API BHT-Nexus, bukan fitur yang diakses browser secara langsung. Hasilnya disimpan sebagai kandidat pada *staging*, ditinjau oleh pengguna berwenang, dan hanya dipromosikan menjadi data resmi melalui API setelah persetujuan.
 
 
 ### 1.3 Intended Audience and Reading Suggestions
@@ -136,16 +139,22 @@ flowchart LR;
 
     Stakeholder["Stakeholder CoE BHT"];
 
-    subgraph System["BHT-Nexus"];
-        Core["Platform Pengelolaan Informasi"];
-    end;
+    Web["Next.js"]
+    API["NestJS API"]
+    DB[("PostgreSQL")]
+    Job["Tabel job"]
+    Worker["Worker Python: scraper dan RAG"]
+    Staging["Staging dan review"]
+    Official["Data resmi"]
 
-    Stakeholder <--> Core;
-
-    Core --> Activity["Aktivitas Organisasi"];
-    Core --> Documentation["Dokumentasi"];
-    Core --> Monitoring["Monitoring"];
-    Core --> Reporting["Pelaporan"];
+    Stakeholder <--> Web
+    Web --> API
+    API --> DB
+    API --> Job
+    Job --> Worker
+    Worker --> Staging
+    Staging --> API
+    API --> Official
 ```
 
 ### 2.2 Product Functions
@@ -329,8 +338,6 @@ Lingkungan operasional tersebut menjadi dasar bagi pelaksanaan seluruh fungsi BH
 
 ### 2.5 Design and Implementation Constraints
 
-> **Catatan:** **PADA BAGIAN INI BELUM SEPENUHNYA FIX, INI BERDASARKAN HASIL ANALISIS YANG DIBERIKAN OLEH ZAENAL**
-
 BHT-Nexus dikembangkan dengan mempertimbangkan sejumlah batasan desain dan implementasi yang telah ditetapkan selama proses analisis kebutuhan sistem. Batasan tersebut berfungsi sebagai acuan bagi tim pengembang dalam menentukan teknologi, standar pengembangan, serta pendekatan implementasi yang digunakan selama siklus pengembangan perangkat lunak. Dengan adanya batasan ini, proses implementasi diharapkan tetap konsisten, mudah dipelihara, serta selaras dengan kebutuhan operasional CoE BHT.
 
 Batasan yang dijelaskan pada bagian ini tidak dimaksudkan untuk menjelaskan arsitektur perangkat lunak secara rinci, melainkan mendefinisikan teknologi dan standar yang menjadi dasar dalam proses pengembangan BHT-Nexus. Perubahan terhadap teknologi yang digunakan dimungkinkan apabila terdapat kebutuhan pengembangan di masa mendatang, namun perubahan tersebut harus tetap mempertimbangkan kompatibilitas terhadap kebutuhan sistem yang telah didefinisikan dalam dokumen ini.
@@ -341,8 +348,8 @@ Framework yang digunakan pada BHT-Nexus dipilih untuk mendukung pengembangan apl
 
 | Komponen | Teknologi | Alasan Menjadi Constraint |
 |-----------|-----------|---------------------------|
-| **Frontend Framework** | Next.js | Digunakan sebagai kerangka kerja utama untuk membangun antarmuka pengguna berbasis web yang mendukung pengembangan modern, *routing*, serta optimasi performa aplikasi. |
-| **Backend Framework** | NestJS | Digunakan sebagai kerangka kerja backend untuk membangun layanan aplikasi yang modular, terstruktur, dan mudah dikembangkan sesuai kebutuhan sistem. |
+| **Frontend Framework** | Next.js 16.2 | Antarmuka web dan satu-satunya klien browser. |
+| **Backend Framework** | NestJS 11 dengan Express bawaan | Satu pintu API publik, otorisasi, orkestrasi *job*, dan promosi data resmi. |
 
 #### Programming Language
 
@@ -350,7 +357,8 @@ Bahasa pemrograman yang digunakan ditetapkan untuk menjaga konsistensi implement
 
 | Komponen | Teknologi | Alasan Menjadi Constraint |
 |-----------|-----------|---------------------------|
-| **Programming Language** | TypeScript | Digunakan sebagai bahasa pemrograman utama karena mendukung *static typing*, meningkatkan konsistensi pengembangan, serta memudahkan proses pemeliharaan perangkat lunak. |
+| **API dan web** | Node.js 24 LTS dan TypeScript | Runtime dan bahasa untuk aplikasi web serta API. |
+| **Worker** | Python 3.12 | Runtime untuk *scraper*, pemrosesan dokumen, *embedding*, dan RAG. |
 
 #### Database and Persistence
 
@@ -358,10 +366,10 @@ Komponen penyimpanan data ditentukan untuk mendukung pengelolaan data yang terst
 
 | Komponen | Teknologi | Alasan Menjadi Constraint |
 |-----------|-----------|---------------------------|
-| **Database Management System** | PostgreSQL | Digunakan sebagai sistem manajemen basis data relasional untuk mendukung pengelolaan data yang konsisten serta memenuhi kebutuhan transaksi pada BHT-Nexus. |
-| **Object Relational Mapping (ORM)** | Prisma ORM | Digunakan untuk mempermudah proses akses data, pengelolaan skema basis data, serta migrasi struktur basis data secara terkontrol. |
-
-> **Catatan:** Apabila hasil implementasi akhir menetapkan ORM yang berbeda berdasarkan keputusan tim pengembang, maka bagian ini harus disesuaikan dengan keputusan tersebut.
+| **Database Management System** | PostgreSQL 18 | Basis data utama untuk data resmi, *job*, *staging*, *review*, provenance, dan audit. |
+| **Object Relational Mapping (ORM)** | Drizzle ORM | Akses data dan migrasi skema pada API. |
+| **Antrean awal** | Tabel *job* PostgreSQL | Antrean terkelola tanpa Redis pada tahap awal. |
+| **Pencarian vektor produksi** | PostgreSQL dengan ekstensi `pgvector` | Menyimpan metadata, *chunk*, hak akses, dan indeks RAG. |
 
 #### API and System Integration
 
@@ -371,6 +379,7 @@ Komunikasi antar komponen sistem dilakukan menggunakan mekanisme yang telah dite
 |-----------|---------------------|---------------------------|
 | **API Architecture** | REST API | Digunakan sebagai mekanisme komunikasi antara frontend dan backend karena sederhana, mudah diintegrasikan, serta sesuai dengan kebutuhan sistem. |
 | **Data Format** | JSON | Digunakan sebagai format pertukaran data antar layanan untuk menjaga interoperabilitas sistem. |
+| **Dokumentasi API** | OpenAPI/Swagger | Mendokumentasikan kontrak API yang dipakai web dan worker. |
 
 #### File Storage
 
@@ -378,9 +387,7 @@ Pengelolaan dokumen dan berkas dilakukan menggunakan media penyimpanan yang mend
 
 | Komponen | Teknologi | Alasan Menjadi Constraint |
 |-----------|-----------|---------------------------|
-| **Object Storage** | Object Storage Service | Digunakan untuk menyimpan dokumen maupun berkas digital yang dikelola oleh sistem secara terpusat dan terpisah dari basis data utama. |
-
-> **Catatan:** Jenis layanan penyimpanan (*cloud object storage* maupun penyimpanan lokal) akan disesuaikan dengan keputusan implementasi tanpa mengubah kebutuhan fungsional sistem.
+| **Penyimpanan awal** | Volume server melalui *storage adapter* | Menyimpan berkas dan artefak besar di luar basis data; metadata dan hak akses disimpan di PostgreSQL. |
 
 #### Development Tools
 
@@ -408,6 +415,12 @@ Batasan desain dan implementasi tersebut menjadi acuan selama proses pengembanga
 
 ### 2.6 Assumnptions and Dependencies
 
+| Asumsi atau ketergantungan | Dampak jika tidak tersedia | Mitigasi |
+| --- | --- | --- |
+| SINTA, Google Scholar, dan Crossref dapat berubah atau membatasi akses. | *Job* sumber tertentu gagal atau tidak lengkap. | Perlakukan sebagai *best-effort*, catat kegagalan per sumber, dan sediakan impor manual. |
+| PostgreSQL, volume server, dan worker tersedia. | *Job* tidak dapat diproses atau hasil tidak tersimpan. | Pantau antrean, status worker, dan gunakan pemulihan *job*. |
+| Reviewer berwenang tersedia. | Kandidat tidak dapat menjadi data resmi atau sumber RAG. | Tampilkan antrean review dan catat keputusan audit. |
+
 ## 3. Requirements
 <!-- identifiable, verifiable, testable requirements; avoid implementation details -->
 
@@ -426,22 +439,25 @@ BHT-Nexus berinteraksi dengan sejumlah sistem perangkat lunak eksternal dalam pr
 
 Namun demikian, ketersediaan dan kelengkapan data yang dapat diperoleh bergantung pada kebijakan dan mekanisme akses yang diterapkan oleh masing-masing platform. Pada sistem yang menerapkan pembatasan akses seperti verifikasi CAPTCHA atau mekanisme *sign-in*, proses pengumpulan data dilakukan secara *best-effort* dan kegagalan akses dianggap sebagai perilaku yang diharapkan (*expected behavior*).
 
-| Sistem Eksternal | Deskripsi | Mekanisme Akses | Catatan |
-| ---------------- | --------- | --------------- | ------- |
-| **SINTA** (*Science and Technology Index*) | Portal nasional ilmu pengetahuan dan teknologi Indonesia yang dikelola Kementerian Pendidikan, Kebudayaan, Riset, dan Teknologi, menyediakan informasi profil peneliti dan publikasi akademik secara publik | HTTP GET ke halaman profil publik | Tidak memerlukan autentikasi; data dapat diakses tanpa pembatasan |
-| **Google Scholar** | Mesin pencari akademik milik Google yang menyediakan informasi profil peneliti dan metadata publikasi ilmiah | HTTP GET ke halaman profil dan pencarian publik | *Best-effort*; rentan terhadap pemblokiran CAPTCHA dan pengalihan ke halaman *sign-in*; kegagalan akses merupakan *expected behavior* |
+| Sistem atau komponen | Deskripsi | Mekanisme Akses | Catatan |
+| ------------------- | --------- | --------------- | ------- |
+| **SINTA** (*Science and Technology Index*) | Sumber publik profil peneliti dan publikasi akademik. | HTTP GET sesuai ketentuan akses sumber. | *Best-effort*; ketersediaan tidak dijamin. |
+| **Google Scholar** | Sumber publik profil peneliti dan metadata publikasi ilmiah. | HTTP GET sesuai ketentuan akses sumber. | *Best-effort*; CAPTCHA dan *sign-in* merupakan kegagalan yang diharapkan. |
+| **Crossref** | Sumber metadata DOI untuk pencocokan dan pelengkapan kandidat publikasi. | API HTTP dengan *contact user-agent*, *cache*, dan pembatasan laju. | Dipakai secara terukur; bukan sumber data resmi otomatis. |
+| **Worker Python** | Worker *scraper* dan RAG yang memproses *job* dari PostgreSQL. | Kontrak *job* dan *staging* pada PostgreSQL. | Tidak diakses langsung oleh browser dan tidak menulis tabel bisnis resmi. |
 
-Integrasi dengan SINTA merupakan integrasi primer yang dapat diandalkan untuk pengumpulan data peneliti dan publikasi CoE BHT, sedangkan integrasi dengan Google Scholar bersifat sekunder dan tidak dijamin ketersediaannya. Ketergantungan terhadap kedua sistem eksternal tersebut harus dipertimbangkan agar sistem tetap dapat beroperasi meskipun salah satu sumber data tidak dapat diakses.
+SINTA, Google Scholar, dan Crossref semuanya merupakan sumber publik *best-effort*. Kegagalan satu sumber tidak membatalkan hasil sumber lain. NestJS API menerima permintaan, membuat *job*, menyediakan statusnya, dan mengendalikan promosi kandidat hasil worker ke data resmi.
 
-- ID: REQ-INT-001
-- Title: Akses Publik SINTA
-- Statement: Sistem wajib mengakses halaman profil publik SINTA melalui HTTP GET tanpa menggunakan mekanisme autentikasi.
-- Rationale: SINTA menyediakan data profil peneliti dan publikasi secara publik sehingga integrasi dapat dilakukan tanpa autentikasi, menyederhanakan proses integrasi dan mengurangi risiko kegagalan akibat perubahan kredensial.
+- ID: REQ-INT-001-2
+- Title: Akses Sumber Publik
+- Statement: Sistem wajib mengakses SINTA, Google Scholar, dan Crossref sesuai ketentuan akses sumber, tanpa melewati CAPTCHA atau memaksa autentikasi.
+- Rationale: Sumber eksternal dapat berubah, tidak tersedia, atau membatasi akses; sistem harus menjaga kepatuhan dan asal-usul data.
 - Acceptance Criteria:
-  - Sistem berhasil mengambil data dari halaman profil SINTA tanpa menggunakan token autentikasi atau kredensial apa pun.
-  - Sistem mengembalikan data yang sesuai dengan halaman profil yang diakses.
-- Verification Method: Test
-- More Information: -
+  - CAPTCHA atau *sign-in* dicatat sebagai kegagalan wajar.
+  - Setiap permintaan mencatat URL sumber, waktu, versi parser, hash respons, dan status.
+  - Tidak ada hasil *scraper* yang langsung menjadi data resmi.
+- Verification Method: Test dan Inspection
+- More Information: Crossref memakai *contact user-agent*, *cache*, dan pembatasan laju.
 
 - ID: REQ-INT-002
 - Title: Akses *Best-Effort* Google Scholar
@@ -470,9 +486,9 @@ Komponen pengumpulan data akademik bertanggung jawab mengambil metadata profil p
 - Rationale: Informasi profil peneliti dari SINTA diperlukan untuk mengidentifikasi dan menghubungkan data publikasi dengan anggota CoE BHT secara akurat.
 - Acceptance Criteria:
   - Sistem berhasil mengekstrak nama, *source ID*, institusi, departemen, dan URL profil dari halaman profil SINTA yang valid.
-  - Data yang diekstrak disimpan dalam format yang telah ditetapkan (CSV, JSONL, atau SQLite).
+  - Data yang diekstrak disimpan sebagai kandidat pada *staging* PostgreSQL dengan provenance.
 - Verification Method: Test
-- More Information: Lihat REQ-INT-001 untuk spesifikasi mekanisme akses SINTA.
+- More Information: Lihat REQ-INT-001-2 untuk spesifikasi mekanisme akses SINTA.
 
 - ID: REQ-FUNC-002
 - Title: Pengumpulan Metadata Publikasi dari SINTA
@@ -482,7 +498,7 @@ Komponen pengumpulan data akademik bertanggung jawab mengambil metadata profil p
   - Sistem berhasil mengekstrak seluruh *field* metadata publikasi yang tersedia dari halaman SINTA yang valid.
   - *Field* yang tidak tersedia pada halaman yang diakses disimpan sebagai nilai kosong tanpa menyebabkan kegagalan proses.
 - Verification Method: Test
-- More Information: Lihat REQ-INT-001 untuk spesifikasi mekanisme akses SINTA.
+- More Information: Lihat REQ-INT-001-2 untuk spesifikasi mekanisme akses SINTA.
 
 - ID: REQ-FUNC-003
 - Title: Pengumpulan *Best-Effort* dari Google Scholar
@@ -495,15 +511,18 @@ Komponen pengumpulan data akademik bertanggung jawab mengambil metadata profil p
 - Verification Method: Test
 - More Information: Lihat REQ-INT-002 untuk spesifikasi mekanisme akses Google Scholar.
 
-- ID: REQ-FUNC-004
-- Title: Penyimpanan Hasil Pengumpulan Data Secara Lokal
-- Statement: Sistem wajib menyimpan hasil pengumpulan data ke penyimpanan lokal dalam format CSV, JSONL, SQLite, dan *Markdown summary*.
-- Rationale: Penyimpanan dalam berbagai format memungkinkan hasil pengumpulan data digunakan kembali untuk berbagai keperluan, termasuk analisis manual, integrasi ke sistem lain, dan penelusuran riwayat pengumpulan data.
+- ID: REQ-FUNC-004-3
+- Title: Staging Hasil Pengumpulan Data
+- Statement: Pada alur worker produksi, *scraper* wajib menyimpan snapshot mentah dan kandidat data terstruktur pada *staging* PostgreSQL dengan provenance dan status *review*.
+- Rationale: Data sumber eksternal adalah kandidat, bukan fakta resmi, sehingga perlu deduplikasi, penelusuran, dan persetujuan.
 - Acceptance Criteria:
-  - Setelah proses pengumpulan data selesai, sistem menghasilkan setidaknya satu berkas CSV, satu berkas JSONL, satu basis data SQLite, dan satu berkas *Markdown summary*.
-  - Seluruh berkas dapat dibuka dan dibaca tanpa kesalahan format.
-- Verification Method: Test
-- More Information: -
+  - Kandidat menyimpan URL sumber, waktu pengambilan, versi parser, hash respons, *source key*, ID *job*, ID *attempt*, dan kunci idempotensi.
+  - Kunci unik atau idempotensi mencegah pembuatan kandidat ganda.
+  - Worker tidak memiliki izin tulis ke tabel bisnis resmi.
+  - Crossref memakai pembungkus *retry* dan pembatasan laju yang sama dengan sumber lain.
+  - Snapshot mentah mengikuti kebijakan retensi dan pembersihan.
+- Verification Method: Integration Test
+- More Information: SQLite, CSV, dan deduplikasi dalam memori hanya boleh menjadi artefak POC.
 
 - ID: REQ-FUNC-005
 - Title: Pencatatan *Attempt Log*
@@ -515,29 +534,66 @@ Komponen pengumpulan data akademik bertanggung jawab mengambil metadata profil p
 - Verification Method: Test
 - More Information: -
 
-- ID: REQ-FUNC-006
-- Title: Eksekusi Manual melalui CLI
-- Statement: Sistem wajib mendukung eksekusi proses pengumpulan data secara manual melalui antarmuka *command-line interface* (CLI); penjadwalan otomatis tidak disyaratkan pada tahap ini.
-- Rationale: Pada tahap pengembangan saat ini, proses pengumpulan data dilakukan secara *on-demand* sesuai kebutuhan tim sehingga antarmuka CLI sudah mencukupi tanpa memerlukan mekanisme penjadwalan otomatis.
+- ID: REQ-FUNC-013-1
+- Title: Orkestrasi Job Asinkron
+- Statement: Sistem wajib membuat *job* ber-ID ketika pengguna meminta *scraping*, pengindeksan dokumen, atau kueri RAG yang memerlukan proses berat; worker Python wajib mengambil dan memperbarui status *job* tersebut.
+- Rationale: Pekerjaan berat tidak boleh memblokir API atau bergantung pada CLI sebagai jalur produk.
 - Acceptance Criteria:
-  - Sistem dapat dijalankan melalui perintah CLI dengan parameter yang mendefinisikan sumber data dan target profil.
-  - Sistem menghasilkan *output* yang dapat dibaca di terminal selama proses berjalan.
-- Verification Method: Demonstration
+  - API mengembalikan `job_id` dan status awal.
+  - Status minimum adalah `queued`, `running`, `succeeded`, `failed`, `retrying`, dan `failed_permanently`.
+  - Frontend memperoleh status hanya melalui NestJS API.
+- Verification Method: Integration Test
+- More Information: CLI tetap dapat dipakai sebagai alat pengembangan atau POC, bukan antarmuka produksi.
+
+- ID: REQ-FUNC-015
+- Title: Normalisasi Masukan Scraper
+- Statement: Sistem wajib menerima nama orang atau URL profil SINTA atau Google Scholar ber-HTTPS pada host yang disetujui, menyimpan masukan mentah, dan membuat nilai pencarian ternormalisasi.
+- Rationale: Normalisasi dan validasi mengurangi salah identifikasi serta mencegah worker mengakses URL yang tidak disetujui.
+- Acceptance Criteria:
+  - Normalisasi menghapus gelar atau sufiks akademik, menormalkan spasi dan huruf besar-kecil.
+  - URL yang tidak ber-HTTPS atau bukan host yang disetujui ditolak.
+  - Masukan mentah dan nilai ternormalisasi tercatat pada *job* atau *attempt*.
+- Verification Method: Test
+- More Information: -
+
+- ID: REQ-FUNC-016
+- Title: Resolusi Identitas dan Pengumpulan Bertahap
+- Statement: Sistem wajib memilih identitas otomatis hanya untuk kecocokan nama ternormalisasi yang tepat dengan konfirmasi institusi apabila tersedia, dan wajib mengembalikan `person_not_found` atau `ambiguous_person` tanpa menyimpan kandidat apabila identitas tidak dapat dipastikan.
+- Rationale: Hasil dari profil peneliti yang salah tidak boleh masuk ke alur *staging*.
+- Acceptance Criteria:
+  - SINTA mengumpulkan seluruh halaman karya untuk identitas yang telah dikonfirmasi.
+  - Kegagalan atau pemblokiran satu sumber menghasilkan `partial_success` apabila sumber lain menghasilkan data valid.
+  - Kegagalan Google Scholar tidak membatalkan hasil SINTA dan berlaku sebaliknya.
+  - POC menggunakan batas unik dan satu transaksi SQLite untuk menghindari duplikasi.
+- Verification Method: Test dan Integration Test
 - More Information: -
 
 #### Tanya Jawab Dokumen Berbasis RAG
 
 Komponen *Retrieval-Augmented Generation* (RAG) memungkinkan pengguna mengajukan pertanyaan dalam bahasa natural terhadap dokumen internal CoE BHT dan memperoleh jawaban yang disertai referensi dokumen sebagai bukti. Komponen ini beroperasi sepenuhnya secara lokal tanpa memerlukan koneksi ke layanan eksternal pada tahap *proof of concept* (POC).
 
-- ID: REQ-FUNC-007
-- Title: Pengindeksan Dokumen PDF Internal
-- Statement: Sistem wajib mengindeks dokumen PDF internal ke dalam *vector store* lokal untuk mendukung proses pencarian berbasis kemiripan semantik.
-- Rationale: Pengindeksan diperlukan agar sistem dapat mengambil potongan dokumen yang relevan secara efisien berdasarkan kueri pengguna tanpa memindai seluruh dokumen pada setiap kueri.
+- ID: REQ-FUNC-014-1
+- Title: RAG Terkontrol
+- Statement: Sistem wajib mengindeks hanya dokumen yang diizinkan melalui *job* asinkron dan menghasilkan jawaban atau kandidat ekstraksi yang dapat ditelusuri ke dokumen, versi, halaman, dan potongan sumber.
+- Rationale: RAG bukan sumber kebenaran dan tidak boleh mengubah data resmi secara otomatis.
 - Acceptance Criteria:
-  - Sistem berhasil memproses dan mengindeks dokumen PDF yang diberikan ke dalam *vector store* lokal.
-  - Dokumen yang telah diindeks dapat dicari menggunakan kueri berbasis teks.
-- Verification Method: Test
-- More Information: Lihat REQ-ML-001 dan REQ-ML-002 untuk spesifikasi model yang digunakan.
+  - Pengindeksan berjalan sebagai *job*.
+  - Jawaban tanpa bukti cukup ditolak dengan pesan eksplisit.
+  - Ekstraksi hanya membuat kandidat perubahan untuk *review*.
+  - Setiap jawaban menyertakan sitasi yang dapat dibuka reviewer.
+- Verification Method: Integration Test dan Evaluation Test
+- More Information: Lihat REQ-ML-004-2 untuk pengelolaan dokumen terotorisasi.
+
+- ID: REQ-FUNC-017
+- Title: Profil Ekstraksi RAG Terkendali
+- Statement: Sistem wajib menyediakan profil ekstraksi yang dipilih dari daftar terkelola, berversi, dan telah ditinjau; setiap profil menentukan instruksi serta skema hasil yang telah ditetapkan.
+- Rationale: Ekstraksi perlu konsisten, dapat diuji, dan dapat diaudit tanpa instruksi bebas dari pengguna pada saat eksekusi.
+- Acceptance Criteria:
+  - Pengguna memilih satu profil dari daftar yang disediakan sistem.
+  - Profil menyimpan versi, instruksi, dan skema validasi hasil.
+  - Instruksi bebas tidak dapat menggantikan instruksi profil saat eksekusi.
+- Verification Method: Inspection dan Integration Test
+- More Information: Contoh profil mencakup hibah, publikasi, dan audit.
 
 - ID: REQ-FUNC-008
 - Title: Dukungan Kueri Bahasa Indonesia dan Inggris
@@ -547,7 +603,7 @@ Komponen *Retrieval-Augmented Generation* (RAG) memungkinkan pengguna mengajukan
   - Kueri dalam Bahasa Indonesia menghasilkan jawaban yang relevan dari dokumen yang diindeks.
   - Kueri dalam Bahasa Inggris menghasilkan jawaban yang relevan dari dokumen yang diindeks.
 - Verification Method: Test
-- More Information: Lihat REQ-ML-002 untuk spesifikasi model *embedding* multilingual yang digunakan.
+- More Information: Lihat REQ-ML-002-2 untuk evaluasi model *embedding* multibahasa.
 
 - ID: REQ-FUNC-009
 - Title: Pengambilan Potongan Dokumen Relevan
@@ -567,7 +623,7 @@ Komponen *Retrieval-Augmented Generation* (RAG) memungkinkan pengguna mengajukan
   - Setiap jawaban yang dihasilkan menyertakan nama dokumen sumber dan nomor halaman yang menjadi dasar jawaban.
   - Jawaban yang tidak memiliki dukungan dokumen dinyatakan secara eksplisit oleh sistem.
 - Verification Method: Test
-- More Information: Lihat REQ-ML-001 untuk spesifikasi model generasi jawaban.
+- More Information: Lihat REQ-ML-001-2 untuk evaluasi model generasi jawaban.
 
 - ID: REQ-FUNC-011
 - Title: Cakupan Topik Kueri
@@ -579,14 +635,14 @@ Komponen *Retrieval-Augmented Generation* (RAG) memungkinkan pengguna mengajukan
 - Verification Method: Demonstration
 - More Information: -
 
-- ID: REQ-FUNC-012
-- Title: Antarmuka CLI untuk Tahap POC
-- Statement: Sistem wajib menyediakan antarmuka CLI sebagai titik interaksi pengguna pada tahap POC; antarmuka berbasis web atau API tidak disyaratkan pada tahap ini.
-- Rationale: Antarmuka CLI mencukupi untuk validasi fungsionalitas RAG pada tahap POC. Modul yang sama dirancang untuk dapat melayani API internal pada tahap pengembangan selanjutnya tanpa perubahan signifikan pada logika inti.
+- ID: REQ-FUNC-012-2
+- Title: CLI sebagai Alat POC
+- Statement: Sistem boleh menyediakan CLI untuk pengembangan dan POC RAG, tetapi browser dan pengguna produk wajib memakai NestJS API.
+- Rationale: CLI membantu validasi lokal tanpa menggantikan batas layanan produksi.
 - Acceptance Criteria:
-  - Pengguna dapat mengajukan kueri dan menerima jawaban melalui antarmuka CLI.
-  - Sistem menampilkan jawaban beserta referensi dokumen di terminal.
-- Verification Method: Demonstration
+  - CLI tidak menjadi satu-satunya jalur untuk *scraping*, pengindeksan, atau kueri produk.
+  - Kontrak API dan *job* dipakai oleh integrasi produk.
+- Verification Method: Inspection
 - More Information: -
 
 ### 3.3 Quality of Service
@@ -595,11 +651,44 @@ Komponen *Retrieval-Augmented Generation* (RAG) memungkinkan pengguna mengajukan
 #### 3.3.1 Performance
 <!-- time (latency, throughput, etc.) and space (memory, storage, bandwidth, etc.) -->
 
+- ID: REQ-PERF-001-1
+- Title: Pekerjaan Berat Asinkron
+- Statement: Sistem wajib menjalankan OCR, *scraping*, *embedding*, dan pengindeksan sebagai *job* asinkron; endpoint API biasa wajib memenuhi p95 kurang dari 500 ms pada 50 permintaan bersamaan.
+- Rationale: Durasi sumber eksternal dan pemrosesan AI tidak boleh menurunkan respons antarmuka pengguna.
+- Acceptance Criteria:
+  - Tidak ada permintaan API yang menunggu *scraping*, OCR, atau *embedding* selesai.
+  - Status *job* dapat diakses selama worker berjalan.
+  - Konkurensi worker dapat dibatasi dan *job* tertunda tetap terukur.
+- Verification Method: Load Test dan Integration Test
+- More Information: Berlaku untuk REQ-FUNC-013-1 dan REQ-FUNC-014-1.
+
 #### 3.3.2 Security
 <!-- protection of data, identities, and operations (transit/rest, auth, encryption, etc); safety, confidentiality, privacy, integrity, and availability -->
 
+- ID: REQ-SEC-001-1
+- Title: Akses Dokumen dan RAG
+- Statement: Sistem wajib memeriksa izin akses dokumen sebelum pengindeksan dan pencarian, serta mengarantina unggahan sebelum diproses.
+- Rationale: Dokumen internal atau terbatas tidak boleh bocor melalui indeks, sitasi, atau jawaban RAG.
+- Acceptance Criteria:
+  - Pengguna tanpa izin tidak dapat mengindeks, mencari, atau menerima sitasi dokumen.
+  - Dokumen yang gagal pemeriksaan keamanan tidak diindeks.
+  - Dataset uji tidak menghasilkan kebocoran dokumen tanpa izin.
+- Verification Method: Security E2E Test
+- More Information: -
+
 #### 3.3.3 Reliability
 <!-- ability to consistently perform as specified (MTBF, redundancy/failover, caches, etc) -->
+
+- ID: REQ-REL-001-1
+- Title: Pemulihan Job
+- Statement: Sistem wajib menerapkan *lease*, *retry* dengan *backoff*, idempotensi, dan status *dead-letter* untuk *job* worker.
+- Rationale: Kegagalan jaringan, sumber publik, atau worker tidak boleh menghilangkan pekerjaan atau membuat data ganda.
+- Acceptance Criteria:
+  - *Job* dengan *lease* kedaluwarsa dapat diproses ulang dengan aman.
+  - Kegagalan setelah batas *retry* menjadi `failed_permanently`.
+  - *Job* gagal tidak mempromosikan data ke tabel resmi.
+- Verification Method: Failure-recovery Test
+- More Information: -
 
 #### 3.3.4 Availability
 <!-- readiness to deliver service (target SLAs, maintenance windows, recovery/restore, etc) -->
@@ -607,8 +696,29 @@ Komponen *Retrieval-Augmented Generation* (RAG) memungkinkan pengguna mengajukan
 #### 3.3.5 Observability
 <!--  logs, metrics, traces, alerting and dashboards -->
 
+- ID: REQ-OBS-001-1
+- Title: Keterlacakan Job
+- Statement: Sistem wajib mencatat `request_id`, `correlation_id`, `job_id`, worker, durasi, dan hasil tanpa menyimpan isi dokumen atau token pada log.
+- Rationale: Keterlacakan diperlukan untuk audit dan diagnosis kegagalan dengan tetap melindungi isi dokumen.
+- Acceptance Criteria:
+  - Log menghubungkan permintaan, *job*, *attempt*, dan kasus *review*.
+  - Metrik mencakup latensi, error, kegagalan *job*, dan kedalaman antrean.
+  - Log tidak memuat isi dokumen atau token.
+- Verification Method: Inspection
+- More Information: -
+
 ### 3.4 Compliance
-<!-- laws, standards, contracts, or policies; cite the authority and verifiable criteria. -->
+
+- ID: REQ-COMP-001
+- Title: Batas Kepatuhan Sumber Publik
+- Statement: Sistem tidak boleh melewati CAPTCHA, memaksa login, atau mengirim dokumen rahasia ke layanan AI eksternal tanpa persetujuan yang berlaku.
+- Rationale: Sistem harus melindungi kepatuhan akses sumber publik dan privasi institusi.
+- Acceptance Criteria:
+  - CAPTCHA dan *sign-in* menghasilkan kegagalan terkontrol.
+  - Konfigurasi mencegah dokumen rahasia diproses oleh layanan AI eksternal tanpa persetujuan.
+  - Audit mencatat sumber, klasifikasi data, dan keputusan *review* tanpa isi dokumen.
+- Verification Method: Inspection dan Security Test
+- More Information: Menguatkan REQ-INT-001-2 dan REQ-SEC-001-1.
 
 ### 3.5 Design and Implementation
 <!-- constraints and mandates on design, deployment, and maintenance section -->
@@ -621,6 +731,17 @@ Komponen *Retrieval-Augmented Generation* (RAG) memungkinkan pengguna mengajukan
 
 #### 3.5.3 Distribution
 <!-- distributed deployments, data, and devices (topologies, replication/placement, etc) -->
+
+- ID: REQ-DIST-001
+- Title: Batas Distribusi Worker
+- Statement: Sistem wajib memisahkan API NestJS dan worker Python sebagai proses yang dapat dijalankan terpisah, tetapi menggunakan PostgreSQL utama dan *storage adapter* yang sama.
+- Rationale: Pemisahan proses melindungi respons API, sedangkan satu alur penyimpanan menjaga konsistensi, *backup*, dan audit.
+- Acceptance Criteria:
+  - Browser tidak berkomunikasi langsung dengan worker.
+  - Worker membaca *job* dan menulis hasil hanya ke area *staging* yang diizinkan.
+  - Tidak ada basis data server terpisah yang diwajibkan untuk *scraper* atau RAG.
+- Verification Method: Inspection dan Integration Test
+- More Information: -
 
 #### 3.5.4 Maintainability
 <!-- measurable attributes that make the software easier to modify, fix, and evolve (modularity, standards, documentation, observability, etc) -->
@@ -640,6 +761,19 @@ Komponen *Retrieval-Augmented Generation* (RAG) memungkinkan pengguna mengajukan
 #### 3.5.9 Proof of Concept
 <!-- objectives, scope, timebox, and success criteria for any POC -->
 
+- ID: REQ-POC-001-2
+- Title: Batas POC dan Produksi
+- Statement: Sistem wajib memisahkan artefak, hasil evaluasi, dan konfigurasi POC *scraper* atau RAG dari jalur produksi.
+- Rationale: CLI, SQLite, CSV, dan FAISS POC belum memenuhi kontrol *job*, *staging*, *review*, dan keamanan produksi.
+- Acceptance Criteria:
+  - SQLite, CSV, snapshot lokal, dan CLI hanya menjadi artefak POC serta bukan penyimpanan produksi, kontrak API, atau sumber data resmi.
+  - FAISS dan SQLite tidak dipakai sebagai *vector store* produksi.
+  - Produksi memakai PostgreSQL dengan `pgvector` dan *storage adapter*.
+  - Alur dashboard atau API yang masih memakai FAISS atau SQLite diberi status praproduksi dan tidak dapat dipromosikan sebelum memakai PostgreSQL dengan `pgvector`.
+  - POC tidak dapat dipromosikan tanpa evaluasi dan persetujuan tim.
+- Verification Method: Inspection
+- More Information: -
+
 #### 3.5.10 Change Management
 <!-- how changes are introduced and communicated (categories, required artifacts and workflow, etc) -->
 
@@ -648,93 +782,137 @@ Komponen *Retrieval-Augmented Generation* (RAG) memungkinkan pengguna mengajukan
 
 #### 3.6.1 Model Specification
 
-Komponen RAG pada BHT-Nexus menggunakan dua model utama yang beroperasi sepenuhnya secara lokal tanpa memerlukan koneksi ke layanan AI eksternal. Pendekatan lokal ini dipilih untuk menjaga privasi dokumen internal, mengurangi ketergantungan terhadap layanan pihak ketiga, dan memastikan sistem dapat beroperasi dalam lingkungan jaringan yang terbatas.
+Komponen RAG pada BHT-Nexus menggunakan model lokal pada tahap POC, sedangkan model produksi dipilih melalui evaluasi kualitas, privasi, lisensi, kapasitas, dan biaya. Indeks produksi disimpan pada PostgreSQL dengan ekstensi `pgvector`; model, *chunking*, dan indeks harus dapat ditelusuri versinya.
 
 | Komponen | Model | Tujuan |
 | -------- | ----- | ------ |
-| **Generasi Jawaban** | `llama3.2:3b` melalui Ollama | Menghasilkan jawaban *natural language* berdasarkan konteks yang diambil dari dokumen |
-| ***Embedding*** | `sentence-transformers/paraphrase-multilingual-mpnet-base-v2` | Menghasilkan representasi vektor dari teks untuk mendukung pencarian berbasis kemiripan semantik dalam Bahasa Indonesia dan Bahasa Inggris |
+| **Generasi Jawaban POC** | `llama3.2:3b` melalui Ollama | Baseline lokal yang wajib dievaluasi sebelum penggunaan produksi |
+| ***Embedding* POC** | `sentence-transformers/paraphrase-multilingual-mpnet-base-v2` | Baseline multibahasa yang wajib dievaluasi |
+| ***Embedding* kandidat** | `multilingual-e5-base` | Kandidat evaluasi terhadap dataset bilingual yang disetujui |
 | ***Vector Store* (POC)** | FAISS lokal dengan metadata SQLite | Menyimpan dan mengindeks vektor dokumen untuk pencarian efisien pada tahap POC |
-| ***Vector Store* (Target)** | PostgreSQL dengan ekstensi `pgvector` | Target migrasi setelah kualitas POC terbukti memenuhi kebutuhan operasional |
+| ***Vector Store* produksi** | PostgreSQL dengan ekstensi `pgvector` | Menyimpan metadata, *chunk*, hak akses, dan indeks yang disetujui |
 
-- ID: REQ-ML-001
-- Title: Model Generasi Jawaban Lokal
-- Statement: Sistem wajib menggunakan model `llama3.2:3b` melalui Ollama untuk generasi jawaban; sistem tidak boleh menggunakan layanan AI eksternal atau berbasis *cloud* untuk generasi jawaban.
-- Rationale: Penggunaan model lokal memastikan dokumen internal CoE BHT tidak dikirimkan ke layanan pihak ketiga, menjaga kerahasiaan informasi penelitian dan operasional organisasi.
+- ID: REQ-ML-001-2
+- Title: Evaluasi dan Versi Model Generasi
+- Statement: Sistem wajib memilih model generasi produksi melalui evaluasi kualitas, privasi, lisensi, kapasitas, dan biaya; setiap aktivasi mencatat nama, revisi, *checksum*, dan tanggal model.
+- Rationale: Model POC tidak boleh menjadi ketergantungan permanen tanpa bukti kesesuaian dan mekanisme reproduksibilitas.
 - Acceptance Criteria:
-  - Sistem menghasilkan jawaban menggunakan model `llama3.2:3b` yang berjalan melalui Ollama di lingkungan lokal.
-  - Tidak ada koneksi jaringan keluar yang dilakukan selama proses generasi jawaban.
-- Verification Method: Test
-- More Information: -
+  - `llama3.2:3b` didokumentasikan sebagai baseline POC, bukan mandat produksi permanen.
+  - Model baru memiliki hasil evaluasi yang ditinjau sebelum aktivasi.
+  - Model dapat dikembalikan ke versi yang sebelumnya disetujui.
+- Verification Method: Analysis dan Inspection
+- More Information: Dokumen rahasia tidak boleh dikirim ke layanan AI eksternal tanpa persetujuan yang berlaku.
 
-- ID: REQ-ML-002
-- Title: Model *Embedding* Multibahasa
-- Statement: Sistem wajib menggunakan model `sentence-transformers/paraphrase-multilingual-mpnet-base-v2` untuk menghasilkan representasi vektor dari teks kueri dan potongan dokumen.
-- Rationale: Model ini mendukung Bahasa Indonesia dan Bahasa Inggris sehingga sesuai dengan kebutuhan multilingual yang telah ditetapkan pada REQ-FUNC-008.
+- ID: REQ-ML-002-2
+- Title: Evaluasi Model Embedding Multibahasa
+- Statement: Sistem wajib mengevaluasi model *embedding* produksi pada dataset Bahasa Indonesia dan Inggris yang disetujui serta mencatat versi model dan *chunking* pada setiap indeks.
+- Rationale: Kualitas retrieval harus dapat diukur dan model harus dapat direproduksi.
 - Acceptance Criteria:
-  - Sistem berhasil menghasilkan vektor *embedding* untuk teks dalam Bahasa Indonesia dan Bahasa Inggris.
-  - Vektor *embedding* yang dihasilkan dapat digunakan untuk menghitung kemiripan semantik antar teks.
-- Verification Method: Test
+  - MPNet dan `multilingual-e5-base` dievaluasi sebelum salah satunya menjadi model produksi.
+  - Perubahan model atau *chunking* membuat indeks baru yang dapat dievaluasi.
+  - Indeks aktif dapat diidentifikasi berdasarkan versi.
+- Verification Method: Evaluation Test dan Inspection
 - More Information: Lihat REQ-FUNC-008 untuk kebutuhan dukungan multibahasa.
 
-- ID: REQ-ML-003
-- Title: *Vector Store* Lokal untuk Tahap POC
-- Statement: Sistem wajib menggunakan FAISS sebagai *vector store* dengan SQLite sebagai penyimpanan metadata pada tahap POC; migrasi ke PostgreSQL dengan ekstensi `pgvector` dilakukan pada tahap selanjutnya setelah kualitas POC terbukti memenuhi kebutuhan.
-- Rationale: FAISS lokal dengan SQLite dipilih untuk tahap POC karena tidak memerlukan infrastruktur basis data tambahan, memungkinkan pengembangan dan validasi yang lebih cepat.
+- ID: REQ-ML-003-3
+- Title: Penyimpanan Vektor Produksi
+- Statement: Sistem wajib menggunakan PostgreSQL dengan ekstensi `pgvector` untuk indeks RAG produksi; FAISS dan SQLite hanya boleh digunakan pada indeks lokal POC yang terisolasi.
+- Rationale: Produksi membutuhkan metadata, izin akses, *backup*, dan audit dalam alur data yang sama.
 - Acceptance Criteria:
-  - Sistem mengindeks dan mengambil vektor dokumen menggunakan FAISS lokal.
-  - Metadata dokumen (nama berkas, nomor halaman, dan teks potongan) disimpan dan dapat diakses melalui SQLite.
-- Verification Method: Test
+  - Metadata dokumen, *chunk*, dan *embedding* mengacu ke versi dokumen yang disetujui.
+  - FAISS dan SQLite tidak digunakan sebagai *vector store* produksi.
+  - Indeks FAISS atau SQLite tidak mendukung alur dashboard atau API produksi.
+- Verification Method: Integration Test
 - More Information: -
 
 #### 3.6.2 Data Management
 
-Pengelolaan data pada komponen RAG dan *scraper* BHT-Nexus mempertimbangkan asal-usul data, mekanisme pengumpulan, proses validasi, serta alur data dari sumber hingga digunakan dalam proses inferensi. Pada tahap saat ini, sumber data primer untuk komponen RAG adalah dokumen PDF internal CoE BHT, sedangkan data hasil *scraper* belum diintegrasikan secara langsung ke dalam *pipeline* RAG dan disimpan sebagai *staging data* yang memerlukan proses *review* sebelum dapat digunakan.
+Pengelolaan data pada komponen RAG dan *scraper* menggunakan satu alur terkelola: frontend → NestJS API → *job* PostgreSQL → worker Python → *staging* dan *review* → promosi API ke data resmi. Tidak ada basis data server khusus untuk *scraper* atau RAG; keduanya memakai PostgreSQL utama dengan batas tabel dan izin yang jelas.
 
 | Aspek | Keterangan |
 | ----- | ---------- |
 | **Sumber Data Primer RAG** | Dokumen PDF internal penelitian dan proyek CoE BHT |
-| **Sumber Data Sekunder RAG** *(future)* | Metadata HTML yang telah disetujui dari *scraper*, seperti metadata Google Scholar; belum aktif pada tahap POC |
-| **Status Data *Scraper*** | Disimpan secara lokal sebagai *staging data*; tidak ditulis langsung ke tabel produksi atau *pipeline* RAG pada tahap ini |
-| **Alur Data *Scraper* ke RAG** | Data *scraper* melewati proses *review* sebelum digunakan sebagai input RAG (*reviewed source adapter*) |
+| **Sumber Data Sekunder RAG** | Data *scraper* yang telah disetujui untuk penggunaan RAG |
+| **Status Data *Scraper*** | Kandidat pada *staging* PostgreSQL; worker tidak menulis tabel produksi |
+| **Alur Data *Scraper* ke RAG** | Hanya kandidat yang telah ditinjau dan disetujui dapat menjadi sumber RAG |
 
-- ID: REQ-ML-004
+- ID: REQ-ML-004-2
 - Title: Sumber Data Primer RAG
-- Statement: Sistem wajib menggunakan dokumen PDF internal CoE BHT sebagai sumber data primer untuk pengindeksan dan pengambilan informasi pada komponen RAG.
+- Statement: Sistem wajib menggunakan dokumen CoE BHT yang telah diizinkan, memiliki versi, klasifikasi, hash, dan lokasi penyimpanan yang tercatat sebagai sumber pengindeksan RAG.
 - Rationale: Dokumen PDF internal merupakan sumber informasi yang telah tervalidasi dan dapat dipercaya untuk kebutuhan tanya jawab operasional CoE BHT.
 - Acceptance Criteria:
-  - Sistem berhasil memproses dan mengindeks dokumen PDF internal yang diberikan sebagai input.
-  - Jawaban yang dihasilkan didasarkan pada konten dokumen PDF internal yang telah diindeks.
-- Verification Method: Test
-- More Information: Lihat REQ-FUNC-007 untuk kebutuhan pengindeksan dokumen.
+  - Dokumen yang gagal karantina atau pemeriksaan keamanan tidak diindeks.
+  - *Chunk* dan *embedding* mengacu ke versi dokumen yang disetujui.
+  - Kueri hanya mencari potongan yang dapat diakses pemanggil.
+- Verification Method: Integration Test dan Security E2E Test
+- More Information: Lihat REQ-FUNC-014-1.
 
-- ID: REQ-ML-005
-- Title: Isolasi Data *Scraper* sebagai *Staging*
-- Statement: Sistem wajib menyimpan data hasil *scraper* sebagai *staging data* di penyimpanan lokal; data tersebut tidak boleh ditulis langsung ke tabel produksi BHT-Nexus maupun digunakan sebagai input *pipeline* RAG tanpa melalui proses *review* yang telah ditetapkan.
-- Rationale: Data yang dikumpulkan dari sumber eksternal memerlukan validasi untuk memastikan akurasi dan relevansinya sebelum digunakan dalam sistem produksi. Pendekatan *staging* ini mencegah data yang belum tervalidasi memengaruhi kualitas jawaban yang dihasilkan oleh komponen RAG.
+- ID: REQ-ML-005-3
+- Title: Data RAG Terkelola
+- Statement: Sistem wajib menyimpan kandidat ekstraksi yang dapat ditinjau, metadata dokumen, versi, hash, klasifikasi, izin, dan audit pada PostgreSQL atau *storage* yang disetujui; indeks SQLite atau FAISS POC tidak menjadi penyimpanan berwenang.
+- Rationale: Lineage, akses, *backup*, dan *review* memerlukan satu alur data terkelola.
 - Acceptance Criteria:
-  - Data hasil *scraper* disimpan dalam format lokal (CSV, JSONL, SQLite) tanpa penulisan otomatis ke basis data produksi.
-  - Tidak ada mekanisme yang memungkinkan data *scraper* masuk ke *pipeline* RAG secara langsung tanpa proses *review*.
-- Verification Method: Inspection
-- More Information: Lihat REQ-FUNC-004 untuk spesifikasi format penyimpanan hasil *scraper*.
+  - Dokumen memiliki hash, versi, klasifikasi, dan *storage key*.
+  - Data *scraper* tidak tersedia untuk RAG sebelum disetujui.
+  - Hasil worker tidak mengubah data resmi secara otomatis.
+  - Kandidat ekstraksi menyertakan dokumen, versi, halaman, ID *chunk*, kutipan, dan status.
+- Verification Method: Integration Test
+- More Information: -
 
 #### 3.6.3 Guardrails
-<!-- controls that the system operates within approved boundaries (validation/sanitation, output filtering, action limits, etc) -->
+
+- ID: REQ-ML-006-2
+- Title: Guardrail dan Review Kandidat
+- Statement: Sistem wajib menolak jawaban tanpa bukti cukup, menghasilkan sitasi terstruktur melalui kode, dan mewajibkan reviewer menerima, menolak, atau meminta perbaikan atas kandidat perubahan sebelum API mempromosikannya.
+- Rationale: Keluaran AI tidak boleh mengubah rekam resmi secara otonom.
+- Acceptance Criteria:
+  - *Citation precision* minimal 95% pada dataset evaluasi bilingual yang disetujui.
+  - Jawaban tanpa bukti menghasilkan penolakan eksplisit.
+  - Sitasi menyertakan versi dokumen, halaman, ID *chunk*, dan kutipan; nilai kepercayaan hanya bersifat informatif.
+  - Keputusan *review* dan aktor dicatat pada audit event.
+  - Pembuat tidak dapat menyetujui kandidat sensitif miliknya sendiri.
+- Verification Method: Evaluation Test dan Security E2E Test
+- More Information: -
 
 #### 3.6.4 Ethics
-<!-- fairness, transparency, and accountability metrics/enforcement -->
+
+Sistem memperlakukan hasil *scraper* dan RAG sebagai kandidat yang memerlukan bukti, provenance, dan peninjauan manusia. Sistem tidak menyajikan keluaran tanpa bukti sebagai data resmi.
 
 #### 3.6.5 Human-in-the-Loop
-<!-- human oversight (review points, escalations, feedback, etc) -->
+
+Hasil *scraper*, ekstraksi, dan perubahan indeks diperlakukan sebagai kandidat sampai reviewer berwenang mengambil keputusan. API, bukan worker, melakukan promosi kandidat yang disetujui ke data resmi.
 
 #### 3.6.6 Model Lifecycle and Operations
-<!-- deployment, monitoring, retraining, and retiring -->
+
+- ID: REQ-ML-007-2
+- Title: Siklus Hidup Model dan Indeks
+- Statement: Sistem wajib menyimpan nama model, revisi, *checksum*, hasil evaluasi, serta versi indeks dan *chunking*; perubahan model, *embedding*, *chunking*, atau versi dokumen wajib melalui evaluasi dan membuat indeks baru sebelum aktivasi.
+- Rationale: Operasi RAG harus dapat direproduksi dan dikembalikan dengan aman.
+- Acceptance Criteria:
+  - Indeks aktif dapat diidentifikasi berdasarkan versi.
+  - Indeks yang sebelumnya disetujui dapat dipulihkan.
+  - Tidak ada pembaruan model diam-diam yang mengubah jawaban produksi.
+  - Penggantian, penolakan, atau penghapusan versi dokumen menghapus *chunk*, *embedding*, dan artefak terkait, sementara keputusan *review* dan audit minimum tetap disimpan.
+  - Artefak *job* yang gagal dihapus setelah masa retensi berakhir.
+- Verification Method: Inspection dan Integration Test
+- More Information: -
 
 ## 4. Verification
 
 | Requirement ID | Verification Method | Test/Artifact Link | Status | Evidence |
 |----------------|---------------------|--------------------|--------|----------|
-|                |                     |                    |        |          |
-|                |                     |                    |        |          |
+| REQ-FUNC-013-1 | Integration Test | Job → staging → review → promosi | Planned | - |
+| REQ-FUNC-004-3 | Integration Test | Isolasi tulis worker dan provenance kandidat | Planned | - |
+| REQ-FUNC-014-1 | Integration dan Evaluation Test | Sitasi bilingual dan penolakan tanpa bukti | Planned | - |
+| REQ-FUNC-015 | Test | Normalisasi nama dan validasi URL/host | Planned | - |
+| REQ-FUNC-016 | Test dan Integration Test | Resolusi identitas, pagination, dan partial success | Planned | - |
+| REQ-FUNC-017 | Inspection dan Integration Test | Profil ekstraksi berversi dan validasi skema | Planned | - |
+| REQ-INT-001-2 | Fixture dan error-path Test | CAPTCHA, perubahan sumber, dan sumber tidak tersedia | Planned | - |
+| REQ-SEC-001-1 | Security E2E Test | Akses dokumen tanpa izin ditolak | Planned | - |
+| REQ-REL-001-1 | Failure-recovery Test | Lease, retry, dan idempotensi job | Planned | - |
+| REQ-POC-001-2 | Inspection | Batas artefak POC dan jalur praproduksi | Planned | - |
+| REQ-ML-003-3 | Integration Test | pgvector produksi dan isolasi FAISS/SQLite | Planned | - |
+| REQ-ML-006-2 | Evaluation dan Security E2E Test | Sitasi terstruktur dan citation precision | Planned | - |
+| REQ-ML-007-2 | Integration Test | Reindeks dan pembersihan versi dokumen | Planned | - |
 
 ## 5. Appendixes
