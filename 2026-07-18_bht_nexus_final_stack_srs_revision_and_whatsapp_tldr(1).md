@@ -692,11 +692,7 @@ Milestone yang dapat dilaporkan:
 
 ## 11. Sumber keputusan
 
-Dokumen rinci:
-
-- local_context/05_ai_agent_outputs/2026-07-18_bht_nexus_complete_architecture_reassessment_and_final_decision.md
-- local_context/05_ai_agent_outputs/2026-07-18_bht_nexus_zero_to_sustainable_release_team_guide.md
-- implementation_guides/2026-07-18_01_bht_nexus_api_repository_foundation.md
+Keputusan pada dokumen ini dirangkum dari hasil penilaian arsitektur, panduan implementasi internal tim, dan sumber proyek berikut.
 
 Sumber proyek:
 
