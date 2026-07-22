@@ -4,11 +4,11 @@ Repository ini menyimpan dokumen kebutuhan resmi BHT-Nexus, yaitu sistem yang di
 
 ## Mulai membaca
 
-- [SRS BHT-Nexus v1.2.0](bht-nexus-srs.md) — sumber utama yang digunakan dalam proses review.
-- [PDF SRS BHT-Nexus v1.2.0](output/pdf/bht-nexus-srs-v1.2.0.pdf) — versi siap baca dan siap dibagikan.
+- [SRS BHT-Nexus v1.2.1](bht-nexus-srs.md) — sumber utama yang digunakan dalam proses review.
+- [PDF SRS BHT-Nexus v1.2.1](output/pdf/bht-nexus-srs-v1.2.1.pdf) — versi siap baca dan siap dibagikan.
 - [Panduan kontribusi](CONTRIBUTING.md) — cara mengusulkan perubahan tanpa menimpa pekerjaan tim.
 
-Status versi 1.2.0 adalah **menunggu review dan persetujuan tim**. Status tersebut membedakan dokumen yang sudah lengkap untuk diperiksa dari dokumen final yang telah disetujui.
+Status versi 1.2.1 adalah **menunggu review dan persetujuan tim**. Versi ini mempertahankan isi kebutuhan yang telah direview, kemudian menyesuaikan susunan dokumen dan cover berdasarkan masukan supervisor serta template SRS yang disepakati tim.
 
 ## Isi SRS
 

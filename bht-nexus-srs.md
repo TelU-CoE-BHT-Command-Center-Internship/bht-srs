@@ -1,30 +1,47 @@
 # Software Requirements Specification
+
+<p align="center">
+  <img src="assets/images/coe-bht-logo.png" alt="Logo Center of Excellence Biomedical and Healthcare Technologies" width="520">
+</p>
+
 ## BHT-Nexus
 
-Version 1.2.0\
-Disiapkan oleh Muhammad Zaenal Abidin A.\
-Center of Excellence Biomedical and Healthcare Technologies, Telkom University\
+**Versi 1.2.1**
+
+**Tim penyusun**
+
+- Fa Ainama Caldera Sudibyo
+- M. Rifqi Dzaky Azhad
+- Muhammad Zaenal Abidin Abdurrahman
+
+**Supervisor**
+
+Muhammad Ammar Asyraf, S.T., M.T.
+
+Center of Excellence Biomedical and Healthcare Technologies<br>
+Telkom University<br>
 22 Juli 2026
+
+<!-- PDF_PAGE_BREAK -->
 
 ## Table of Contents
 <!-- TOC -->
 * [1. Introduction](#1-introduction)
     * [1.1 Document Purpose](#11-document-purpose)
     * [1.2 Product Scope](#12-product-scope)
-    * [1.3 Intended Audience and Reading Suggestions](#13-intended-audience-and-reading-suggestions)
-    * [1.4 Document Conventions](#14-document-conventions)
-    * [1.5 References](#15-references)
+    * [1.3 Definitions, Acronyms, and Abbreviations](#13-definitions-acronyms-and-abbreviations)
+    * [1.4 References](#14-references)
+    * [1.5 Document Overview](#15-document-overview)
 * [2. Product Overview](#2-product-overview)
     * [2.1 Product Perspective](#21-product-perspective)
     * [2.2 Product Functions](#22-product-functions)
-    * [2.3 User Classes and Characteristics](#23-user-classes-and-characteristics)
-    * [2.4 Operating Environment](#24-operating-environment)
-    * [2.5 Design and Implementation Constraints](#25-design-and-implementation-constraints)
-    * [2.6 Assumptions and Dependencies](#26-assumptions-and-dependencies)
-    * [2.7 Release Priorities](#27-release-priorities)
+    * [2.3 Product Constraints](#23-product-constraints)
+    * [2.4 User Characteristics](#24-user-characteristics)
+    * [2.5 Assumptions and Dependencies](#25-assumptions-and-dependencies)
+    * [2.6 Apportioning of Requirements](#26-apportioning-of-requirements)
 * [3. Requirements](#3-requirements)
     * [3.1 External Interfaces](#31-external-interfaces)
-    * [3.2 Functions](#32-functions)
+    * [3.2 Functional](#32-functional)
     * [3.3 Quality of Service](#33-quality-of-service)
     * [3.4 Compliance](#34-compliance)
     * [3.5 Design and Implementation](#35-design-and-implementation)
@@ -37,9 +54,10 @@ Center of Excellence Biomedical and Healthcare Technologies, Telkom University\
 
 | Name | Date | Reason For Changes | Version |
 |------|------|--------------------|---------|
-| Fa Ainama Caldera S   | 14 Juli 2026     | Pembuatan dokumen srs v1                    |  v1.0.0         |
+| Fa Ainama Caldera Sudibyo | 14 Juli 2026 | Penyusunan awal SRS BHT-Nexus. | v1.0.0 |
 | M. Rifqi Dzaky Azhad | 18 Juli 2026 | Revisi alur scraper dan RAG terkelola | v1.1.0 |
-| Muhammad Zaenal Abidin A. | 22 Juli 2026 | Melengkapi kebutuhan sistem, matriks verifikasi, dan lampiran. | v1.2.0 |
+| Muhammad Zaenal Abidin Abdurrahman | 22 Juli 2026 | Melengkapi kebutuhan sistem, matriks verifikasi, dan lampiran. | v1.2.0 |
+| Muhammad Zaenal Abidin Abdurrahman | 22 Juli 2026 | Menyesuaikan susunan dokumen dengan template SRS, melengkapi cover, dan memperbarui PDF. | v1.2.1 |
 
 ## 1. Introduction
 
@@ -69,45 +87,25 @@ Dalam batasan sistem, *scraper* dan RAG adalah worker Python terpisah yang dipan
 Ruang lingkup rilis awal tidak mencakup aplikasi seluler *native*, arsitektur *microservice*, integrasi Looker Studio, pengambilan data yang melewati CAPTCHA atau autentikasi sumber, AI yang mengubah data resmi tanpa persetujuan manusia, *chatbot* publik untuk dokumen internal, maupun analitik waktu nyata yang membutuhkan *streaming*. Batas tersebut menjaga agar pengembangan tetap berfokus pada kebutuhan utama yang dapat diuji dan dioperasikan oleh tim.
 
 
-### 1.3 Intended Audience and Reading Suggestions
+### 1.3 Definitions, Acronyms, and Abbreviations
 
-Dokumen *Software Requirements Specification* (SRS) ini ditujukan bagi seluruh stakeholder yang terlibat dalam proses analisis, pengembangan, pengujian, validasi, dan pengelolaan perangkat lunak BHT-Nexus. Setiap stakeholder memiliki kebutuhan informasi yang berbeda sesuai dengan peran dan tanggung jawabnya. Oleh karena itu, dokumen ini disusun secara terstruktur agar setiap pembaca dapat mengakses bagian yang paling relevan tanpa kehilangan konteks terhadap keseluruhan sistem.
+Istilah berikut digunakan berulang kali dalam dokumen. Penjelasan diberikan pada bagian awal agar pembaca teknis maupun nonteknis memahami maksud yang sama.
 
-Seluruh pembaca disarankan untuk memulai dengan membaca **Bab 1 Introduction** guna memahami tujuan penyusunan dokumen, ruang lingkup perangkat lunak, serta konteks pengembangan BHT-Nexus. Setelah memahami gambaran umum tersebut, pembaca dapat melanjutkan ke bagian lain sesuai dengan kebutuhan dan tanggung jawabnya selama siklus pengembangan perangkat lunak. Pendekatan ini bertujuan membangun pemahaman yang konsisten antarstakeholder serta meminimalkan perbedaan interpretasi terhadap kebutuhan sistem.
+| Istilah | Arti dalam dokumen ini |
+| --- | --- |
+| **API** (*Application Programming Interface*) | Jalur komunikasi resmi yang digunakan web dan worker untuk meminta layanan BHT-Nexus. |
+| **Audit trail** | Riwayat yang mencatat siapa melakukan apa, kapan dilakukan, dan data apa yang berubah. |
+| **CoE BHT** | *Center of Excellence Biomedical and Healthcare Technologies* di Telkom University. |
+| **Kandidat / staging** | Data hasil impor, scraper, atau ekstraksi yang belum dianggap resmi dan masih perlu diperiksa. |
+| **KPI** (*Key Performance Indicator*) | Ukuran yang digunakan untuk melihat pencapaian berdasarkan definisi, periode, dan data pembentuk yang jelas. |
+| **OpenAPI/Swagger** | Format dokumentasi kontrak API agar alamat layanan, masukan, keluaran, dan kesalahannya dapat dipahami serta diuji. |
+| **POC** (*proof of concept*) | Percobaan terbatas untuk membuktikan kemampuan dasar; belum otomatis aman atau siap dipakai pada produksi. |
+| **Provenance** | Catatan asal-usul data, misalnya sumber, waktu pengambilan, dan proses yang menghasilkannya. |
+| **RAG** (*Retrieval-Augmented Generation*) | Cara menghasilkan jawaban dengan mengambil potongan dokumen yang relevan terlebih dahulu agar jawaban dapat menyertakan sumber. |
+| **SRS** (*Software Requirements Specification*) | Dokumen yang menjelaskan kebutuhan sistem sebagai acuan bersama untuk perancangan, implementasi, dan pengujian. |
+| **Worker** | Proses Python yang menjalankan pekerjaan berat seperti scraper, OCR, dan RAG di belakang layar. |
 
-| Stakeholder                       | Tujuan Membaca Dokumen                                                                                                                     | Bagian yang Direkomendasikan                                                                                 |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
-| Project Supervisor                | Memastikan kebutuhan perangkat lunak telah sesuai dengan tujuan proyek dan kebutuhan organisasi.                                           | Seluruh dokumen, dengan fokus pada **Introduction**, **Overall Description**, dan **Specific Requirements**. |
-| Project Manager / Koordinator Tim | Memahami ruang lingkup proyek, mengoordinasikan proses pengembangan, serta memastikan kebutuhan telah terdokumentasi secara lengkap.       | Seluruh dokumen.                                                                                             |
-| System Analyst                    | Memverifikasi kelengkapan, konsistensi, dan keterlacakan kebutuhan perangkat lunak sebelum proses implementasi dimulai.                    | **Overall Description**, **Specific Requirements**, dan **Appendix** (apabila tersedia).                     |
-| UI/UX Designer                    | Memahami karakteristik pengguna, kebutuhan sistem, dan batasan yang memengaruhi perancangan antarmuka pengguna.                            | **Overall Description** dan **Specific Requirements**.                                                       |
-| Frontend Developer                | Menggunakan spesifikasi kebutuhan sebagai acuan dalam mengimplementasikan antarmuka dan interaksi pengguna sesuai dengan kebutuhan sistem. | **Specific Requirements** serta bagian yang berkaitan dengan antarmuka pengguna.                             |
-| Backend Developer                 | Menggunakan spesifikasi kebutuhan sebagai acuan dalam mengimplementasikan logika bisnis, pengelolaan data, dan layanan sistem.             | **Overall Description** dan **Specific Requirements**.                                                       |
-| Database Engineer                 | Memahami kebutuhan data serta batasan yang memengaruhi perancangan dan pengelolaan basis data.                                             | **Overall Description** dan **Specific Requirements** yang berkaitan dengan data.                            |
-| Quality Assurance (QA)            | Menyusun skenario pengujian dan memvalidasi kesesuaian implementasi terhadap kebutuhan yang telah ditetapkan.                              | **Specific Requirements** dan kriteria yang berkaitan dengan kebutuhan sistem.                               |
-| Technical Writer / Dokumentasi    | Menjaga konsistensi antara dokumentasi pengguna, dokumentasi teknis, dan kebutuhan perangkat lunak yang telah disepakati.                  | Seluruh dokumen sesuai kebutuhan dokumentasi.                                                                |
-| Pengurus CoE BHT                  | Memastikan kebutuhan sistem telah merepresentasikan kebutuhan operasional organisasi dan menjadi dasar dalam proses validasi kebutuhan.    | **Introduction**, **Overall Description**, dan **Specific Requirements**.                                    |
-
-### 1.4 Document Conventions
-
-Dokumen *Software Requirements Specification* (SRS) ini disusun mengikuti struktur dan prinsip yang direkomendasikan oleh standar IEEE 29148 untuk memastikan informasi disajikan secara konsisten, mudah dipahami, dan dapat digunakan sebagai acuan bersama selama proses analisis, pengembangan, pengujian, dan validasi perangkat lunak. Seluruh isi dokumen menggunakan bahasa Indonesia yang mengacu pada Pedoman Umum Ejaan Bahasa Indonesia (PUEBI/ EYD Edisi V) dan Kamus Besar Bahasa Indonesia (KBBI) untuk menjaga kejelasan, konsistensi, dan ketepatan penggunaan istilah.
-
-Konvensi penulisan diterapkan secara konsisten pada seluruh dokumen agar setiap stakeholder memiliki pemahaman yang sama terhadap struktur informasi dan interpretasi kebutuhan perangkat lunak. Selain meningkatkan keterbacaan dokumen, konvensi ini juga mendukung proses penelusuran kebutuhan (*requirement traceability*), pengelolaan perubahan dokumen, serta komunikasi antaranggota tim selama siklus pengembangan perangkat lunak.
-
-| Elemen               | Konvensi                                                                                                                                                                                                  |
-| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Struktur dokumen     | Dokumen disusun secara hierarkis mengikuti struktur IEEE 29148. Setiap bab dan subbab menggunakan sistem penomoran bertingkat untuk menunjukkan hubungan antarbagian dokumen.                             |
-| Istilah              | Istilah yang digunakan memiliki makna yang konsisten di seluruh dokumen. Istilah teknis, nama sistem, atau istilah asing ditulis secara seragam untuk menghindari perbedaan interpretasi.                 |
-| **Bold**             | Digunakan untuk menekankan istilah, nama bagian, atau informasi penting yang perlu memperoleh perhatian khusus dari pembaca.                                                                              |
-| *Italic*             | Digunakan untuk istilah asing, nama dokumen, atau istilah yang pertama kali diperkenalkan sesuai dengan kaidah penulisan bahasa Indonesia.                                                                |
-| Tabel                | Digunakan untuk menyajikan informasi yang bersifat terstruktur, seperti klasifikasi, perbandingan, atau daftar kebutuhan. Seluruh tabel diberikan nomor dan judul sebagai identitas referensi.            |
-| Gambar               | Digunakan untuk mendukung penjelasan apabila representasi visual memberikan pemahaman yang lebih baik dibandingkan uraian tekstual. Seluruh gambar diberikan nomor dan judul sebagai identitas referensi. |
-| Pernyataan kebutuhan | Setiap kebutuhan perangkat lunak ditulis sebagai satu pernyataan yang jelas, spesifik, tidak ambigu, serta dapat diverifikasi melalui proses implementasi maupun pengujian.                               |
-| Penomoran kebutuhan  | Setiap kebutuhan diberikan identitas atau penomoran yang unik sesuai struktur dokumen untuk memudahkan penelusuran, pengelolaan perubahan, dan keterkaitan dengan proses pengembangan maupun pengujian.   |
-
-Konvensi yang ditetapkan pada dokumen ini berlaku untuk seluruh bagian SRS dan menjadi pedoman dalam penyusunan setiap kebutuhan perangkat lunak. Dengan menerapkan konvensi yang konsisten, setiap stakeholder diharapkan dapat memahami isi dokumen secara seragam, mengurangi potensi perbedaan interpretasi, serta mendukung proses pengembangan perangkat lunak yang terdokumentasi dengan baik.
-
-### 1.5 References
+### 1.4 References
 
 Dokumen *Software Requirements Specification* (SRS) ini disusun dengan mengacu pada standar, pedoman, dan referensi resmi yang mendukung penyusunan spesifikasi kebutuhan perangkat lunak. Referensi berikut digunakan sebagai dasar dalam penyusunan struktur dokumen, penerapan konvensi penulisan, serta penggunaan istilah yang konsisten selama proses dokumentasi.
 
@@ -126,6 +124,26 @@ Dokumen *Software Requirements Specification* (SRS) ini disusun dengan mengacu p
 **[7]** Tim Dashboard Automation Specialist CoE BHT. [*BHT-Nexus API*](https://github.com/TelU-CoE-BHT-Command-Center-Internship/bht-nexus-api). Fondasi implementasi NestJS dan dokumentasi teknis pada organisasi GitHub proyek.
 
 **[8]** Tim Dashboard Automation Specialist CoE BHT. [*Proof of Concept Scraper Google Scholar dan SINTA*](https://github.com/TelU-CoE-BHT-Command-Center-Internship/scrapper-google-scholar-sinta) serta [*Proof of Concept RAG Document*](https://github.com/TelU-CoE-BHT-Command-Center-Internship/rag-document). Digunakan sebagai referensi kemampuan awal, bukan sebagai bukti kesiapan produksi.
+
+**[9]** jam01. [*Software Requirements Specification Template*](https://github.com/jam01/SRS-Template/blob/master/srs-template.md). Digunakan sebagai acuan susunan Markdown dokumen ini.
+
+**[10]** Karl E. Wiegers. *Software Requirements Specification Template*. 1999. Digunakan sebagai acuan tampilan cover, daftar isi, riwayat revisi, dan susunan dokumen; bukan sebagai pengganti standar ISO/IEC/IEEE 29148:2018.
+
+### 1.5 Document Overview
+
+Dokumen ini ditujukan bagi supervisor, koordinator tim, pengurus CoE BHT, analis, desainer, pengembang, pengelola data, penguji, dan penulis dokumentasi. Seluruh pembaca sebaiknya memulai dari Bab 1 dan Bab 2 untuk memahami tujuan, batas, pengguna, serta konteks produk. Bab 3 menjadi acuan utama saat membangun dan menguji fitur. Bab 4 menghubungkan setiap kebutuhan dengan cara pemeriksaannya, sedangkan Bab 5 berisi kriteria penerimaan dan status implementasi.
+
+| Pembaca | Informasi yang paling dibutuhkan | Bagian yang disarankan |
+| --- | --- | --- |
+| Supervisor dan pengurus CoE BHT | Tujuan, ruang lingkup, manfaat, batas, prioritas, dan kriteria penerimaan. | Bab 1, Bab 2, Bab 4, dan Appendix A. |
+| Koordinator tim dan analis | Kelengkapan, konsistensi, keterlacakan, serta urutan pelaksanaan. | Seluruh dokumen. |
+| UI/UX dan pengembang web | Karakteristik pengguna, alur kerja, antarmuka, akses, dan dashboard. | Bagian 2.4, 3.1, 3.2, dan 3.3. |
+| Pengembang API, basis data, dan worker | Aturan bisnis, data, integrasi, keamanan, scraper, serta RAG. | Bagian 2.3 dan seluruh Bab 3. |
+| Quality Assurance | Kriteria penerimaan, metode verifikasi, dan matriks keterlacakan. | Bab 3, Bab 4, dan Appendix A. |
+
+Dokumen mengadaptasi susunan template SRS pada Referensi [9] dan prinsip kebutuhan yang dapat diuji pada ISO/IEC/IEEE 29148:2018. Bahasa Indonesia mengikuti EYD Edisi V dan KBBI. Istilah asing ditulis miring saat sesuai, singkatan dijelaskan ketika pertama kali dipakai, dan setiap kebutuhan diberi ID unik. Kata **wajib** menunjukkan kebutuhan yang harus dipenuhi. Setiap kebutuhan pada Bab 3 memuat pernyataan, alasan, kriteria penerimaan, metode verifikasi, dan informasi tambahan apabila diperlukan.
+
+Tabel digunakan untuk membandingkan atau mengelompokkan informasi. Diagram digunakan hanya ketika alur lebih mudah dipahami secara visual. Pada PDF, diagram diberi keterangan langsung sebelum atau sesudah gambar agar pembaca tidak perlu menebak arti panah dan komponennya.
 
 
 ## 2. Product Overview
@@ -146,6 +164,7 @@ Untuk memperjelas hubungan antara BHT-Nexus, pengguna, dan layanan pendukung dal
 Diagram dibaca dari atas ke bawah mengikuti nomor 1 sampai 5. Bagian terpentingnya adalah hasil otomatis selalu berstatus kandidat terlebih dahulu; data baru menjadi resmi setelah diperiksa dan disetujui pengguna yang berwenang.
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Arial","fontSize":"17px","lineColor":"#52606D"},"flowchart":{"curve":"linear","nodeSpacing":32,"rankSpacing":38,"htmlLabels":true}}}%%
 flowchart TB
     Start["1. Pengguna mengirim data,<br/>dokumen, atau permintaan"]
     Process["2. BHT-Nexus memeriksa izin<br/>dan menjalankan proses yang diperlukan"]
@@ -174,6 +193,8 @@ flowchart TB
     class Revision process;
 ```
 
+*Gambar 1. Alur perubahan masukan menjadi data resmi setelah pemeriksaan manusia.*
+
 ### 2.2 Product Functions
 
 BHT-Nexus menyediakan sekumpulan fungsi utama yang dirancang untuk mendukung pengelolaan informasi dan aktivitas operasional di lingkungan *Center of Excellence Biomedical and Healthcare Technologies* (CoE BHT). Fungsi-fungsi tersebut dikembangkan sebagai representasi kebutuhan bisnis organisasi sehingga mampu mendukung pengelolaan informasi secara terintegrasi, terdokumentasi, dan mudah diakses oleh stakeholder yang berwenang. Pada bagian ini, fungsi sistem dijelaskan pada tingkat konseptual sebagai gambaran umum mengenai kemampuan yang dimiliki BHT-Nexus, sedangkan penjelasan rinci mengenai kebutuhan fungsional akan diuraikan pada Bab 3 *Specific Requirements*.
@@ -193,50 +214,27 @@ BHT-Nexus menyediakan sekumpulan fungsi utama yang dirancang untuk mendukung pen
 
 Fungsi-fungsi tersebut saling melengkapi dalam membentuk proses pengelolaan informasi yang terintegrasi di lingkungan CoE BHT. Hubungan antar fungsi tidak bersifat independen, melainkan saling mendukung untuk memastikan informasi dapat dikumpulkan, diperiksa, dikelola, didokumentasikan, dipantau, dimanfaatkan, dan disajikan secara konsisten sesuai dengan kebutuhan organisasi. Untuk memudahkan pemahaman mengenai keterkaitan antar fungsi tersebut, hubungan konseptualnya dapat divisualisasikan melalui diagram berikut.
 
-Diagram dibaca dari kiri ke kanan. Data masuk melalui beberapa jalur, diolah sesuai jenisnya, diperiksa manusia, kemudian hasil yang disetujui dipakai untuk monitoring, KPI, pelaporan, serta pencarian dengan sumber.
+Diagram dibaca dari atas ke bawah mengikuti nomor 1 sampai 5. Data masuk melalui beberapa jalur, diolah sesuai jenisnya, diperiksa manusia, kemudian hasil yang disetujui dipakai untuk monitoring, KPI, pelaporan, serta pencarian dengan sumber. Garis putus-putus menuju audit berarti keputusan dan perubahan hanya dicatat sebagai riwayat; garis tersebut bukan alur pengolahan data.
 
 
 ```mermaid
-flowchart LR
-    subgraph Input["1. Data masuk"]
-        Manual["Input anggota,<br/>aktivitas, dan publikasi"]
-        Import["Impor spreadsheet"]
-        External["SINTA, Google Scholar,<br/>dan Crossref"]
-        Document["Dokumen CoE BHT"]
-    end
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Arial","fontSize":"17px","lineColor":"#52606D"},"flowchart":{"curve":"linear","nodeSpacing":30,"rankSpacing":38,"htmlLabels":true}}}%%
+flowchart TB
+    Input["1. Data masuk<br/>Input manual • spreadsheet<br/>SINTA/Scholar/Crossref • dokumen"]
+    Process["2. Diolah sesuai jenisnya<br/>Data inti • scraper<br/>dokumen dan RAG"]
+    Review{"3. Pengguna berwenang<br/>memeriksa kandidat"}
+    Revision["Ditolak atau<br/>diminta diperbaiki"]
+    Official["4. Hasil yang disetujui<br/>menjadi data resmi"]
+    Output["5. Data resmi digunakan untuk<br/>monitoring • KPI • pelaporan<br/>pencarian dan jawaban bersumber"]
+    Audit["Audit<br/>keputusan dan perubahan dicatat"]
 
-    subgraph Process["2. Pengolahan"]
-        Core["Pengelolaan data inti"]
-        Scraper["Pengumpulan data akademik"]
-        RAG["Dokumen dan RAG"]
-    end
-
-    Review["3. Pemeriksaan manusia<br/>terima, tolak, atau perbaiki"]
-    Official["4. Data resmi"]
-
-    subgraph Output["5. Informasi yang digunakan"]
-        Monitor["Monitoring aktivitas"]
-        KPI["KPI dan dashboard"]
-        Report["Pelaporan"]
-        Search["Pencarian dan jawaban<br/>dengan sumber"]
-    end
-
-    Audit["Audit dan riwayat perubahan"]
-
-    Manual --> Core
-    Import --> Core
-    External --> Scraper
-    Document --> RAG
-    Core --> Review
-    Scraper --> Review
-    RAG --> Review
-    Review -->|"disetujui"| Official
-    Official --> Monitor
-    Official --> KPI
-    Official --> Report
-    Official --> Search
-    Review -.->|"keputusan dicatat"| Audit
-    Official -.->|"perubahan dicatat"| Audit
+    Input --> Process
+    Process --> Review
+    Review -->|"Disetujui"| Official
+    Review -->|"Belum disetujui"| Revision
+    Official --> Output
+    Review -.->|"Keputusan"| Audit
+    Official -.->|"Perubahan"| Audit
 
     classDef source fill:#fff3cd,stroke:#a66a00,color:#3d2a00,stroke-width:1.5px;
     classDef process fill:#dff5f2,stroke:#138a7e,color:#103c38,stroke-width:1.5px;
@@ -244,21 +242,151 @@ flowchart LR
     classDef official fill:#dceeff,stroke:#1f5f99,color:#102a43,stroke-width:2px;
     classDef output fill:#eef7e8,stroke:#4f7f31,color:#233d16,stroke-width:1.5px;
     classDef audit fill:#f1e8ff,stroke:#6f42a8,color:#30203f,stroke-width:1.5px;
-    class Manual,Import,External,Document source;
-    class Core,Scraper,RAG process;
+    class Input source;
+    class Process process;
     class Review decision;
+    class Revision process;
     class Official official;
-    class Monitor,KPI,Report,Search output;
+    class Output output;
     class Audit audit;
 ```
 
+*Gambar 2. Alur data dari sumber masuk hingga digunakan untuk monitoring, KPI, pelaporan, dan pencarian.*
+
 Dengan demikian, setiap fungsi utama yang dijelaskan pada bagian ini menjadi landasan dalam penyusunan kebutuhan fungsional pada bab berikutnya. Pendekatan ini memastikan bahwa pengembangan BHT-Nexus tetap selaras dengan kebutuhan bisnis organisasi dan memiliki keterkaitan yang jelas antara kapabilitas sistem pada tingkat konseptual dan kebutuhan rinci pada tingkat spesifikasi.
 
-Setelah dilakukan verifikasi terhadap konteks organisasi dan kebutuhan sistem, struktur pada Bagian 2.3 tidak hanya dipandang sebagai daftar aktor, tetapi juga sebagai penghubung antara organisasi CoE BHT dan kebutuhan fungsional BHT-Nexus. Oleh karena itu, bagian ini menjelaskan bagaimana struktur stakeholder menghasilkan kebutuhan bisnis, bagaimana kebutuhan tersebut diterjemahkan menjadi layanan yang didukung oleh sistem, serta siapa saja yang kemudian menjadi pengguna BHT-Nexus. Dengan pendekatan tersebut, setiap *Functional Requirement* pada Bab 3 dapat ditelusuri kembali (*traceable*) hingga ke kebutuhan stakeholder yang mendasarinya.
+Setelah dilakukan verifikasi terhadap konteks organisasi dan kebutuhan sistem, struktur pada Bagian 2.4 tidak hanya dipandang sebagai daftar aktor, tetapi juga sebagai penghubung antara organisasi CoE BHT dan kebutuhan fungsional BHT-Nexus. Oleh karena itu, bagian ini menjelaskan bagaimana struktur stakeholder menghasilkan kebutuhan bisnis, bagaimana kebutuhan tersebut diterjemahkan menjadi layanan yang didukung oleh sistem, serta siapa saja yang kemudian menjadi pengguna BHT-Nexus. Dengan pendekatan tersebut, setiap *Functional Requirement* pada Bab 3 dapat ditelusuri kembali (*traceable*) hingga ke kebutuhan stakeholder yang mendasarinya.
 
----
+### 2.3 Product Constraints
 
-### 2.3 User Classes and Characteristics
+Bagian ini merangkum kondisi lingkungan serta batasan teknologi yang harus dipatuhi oleh BHT-Nexus. Lingkungan menjelaskan tempat sistem digunakan dan dijalankan, sedangkan batasan implementasi menetapkan fondasi teknis yang telah disepakati. Keduanya ditempatkan bersama agar pembaca dapat membedakan kebutuhan produk dari rincian desain yang dikelola pada dokumen teknis.
+
+#### Operating Environment
+
+BHT-Nexus dirancang sebagai sistem informasi berbasis web yang beroperasi pada lingkungan *client-server* dan dapat diakses oleh pengguna melalui jaringan internet sesuai dengan hak akses yang dimiliki. Lingkungan operasional ini dipilih untuk mendukung kebutuhan akses yang fleksibel bagi berbagai kelompok pengguna, baik yang berada di lingkungan Telkom University maupun pihak eksternal yang terlibat dalam aktivitas CoE BHT. Dengan pendekatan tersebut, sistem diharapkan mampu menyediakan layanan secara terpusat sehingga pengelolaan informasi, aktivitas, dan dokumentasi dapat dilakukan secara konsisten oleh seluruh pengguna yang berwenang.
+
+Lingkungan operasional BHT-Nexus terdiri atas beberapa komponen utama yang saling mendukung agar sistem dapat berjalan dengan baik. Komponen tersebut meliputi lingkungan pengguna (*client environment*), lingkungan aplikasi (*application environment*), lingkungan jaringan (*network environment*), serta lingkungan server (*server environment*). Masing-masing lingkungan memiliki fungsi yang berbeda, namun secara bersama-sama membentuk ekosistem operasional yang mendukung pelaksanaan layanan BHT-Nexus.
+
+##### Client Environment
+
+Lingkungan pengguna merupakan perangkat yang digunakan untuk mengakses BHT-Nexus. Sistem dirancang agar dapat diakses melalui *web browser* modern pada berbagai jenis perangkat tanpa memerlukan instalasi aplikasi khusus.
+
+| Komponen                | Deskripsi                                                                                                         |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| **Perangkat Pengguna**  | Desktop, laptop, tablet, atau smartphone yang mendukung akses melalui peramban web.                               |
+| **Media Akses**         | Peramban (*web browser*) modern yang mendukung standar web terkini.                                               |
+| **Karakteristik Akses** | Mendukung akses lintas perangkat (*cross-platform*) dengan antarmuka yang responsif sesuai ukuran layar pengguna. |
+
+##### Application Environment
+
+BHT-Nexus dikembangkan sebagai aplikasi berbasis web yang menggunakan pendekatan *client-server*, sehingga seluruh proses pengelolaan data dilakukan secara terpusat dan dapat diakses oleh banyak pengguna secara bersamaan.
+
+| Komponen                   | Deskripsi                                           |
+| -------------------------- | --------------------------------------------------- |
+| **Jenis Aplikasi**         | Sistem informasi berbasis web.                      |
+| **Arsitektur Operasional** | Client-server.                                      |
+| **Karakteristik Sistem**   | Multi-user dengan pengelolaan data secara terpusat. |
+
+##### Network Environment
+
+Akses terhadap BHT-Nexus dilakukan melalui jaringan yang mendukung komunikasi data antara pengguna dan server aplikasi. Ketersediaan koneksi jaringan yang stabil diperlukan untuk menjaga kelancaran proses pertukaran data selama sistem digunakan.
+
+| Komponen              | Deskripsi                                                                                      |
+| --------------------- | ---------------------------------------------------------------------------------------------- |
+| **Media Jaringan**    | Internet.                                                                                      |
+| **Komunikasi Data**   | Mendukung komunikasi data secara aman antara pengguna dan sistem.                              |
+| **Kebutuhan Koneksi** | Memerlukan koneksi jaringan yang stabil agar seluruh layanan sistem dapat diakses dengan baik. |
+
+##### Server Environment
+
+Lingkungan server menyediakan layanan yang diperlukan agar BHT-Nexus dapat beroperasi sebagai sistem informasi terpusat. Pada tahap ini, lingkungan server dijelaskan secara konseptual tanpa mengacu pada teknologi maupun platform implementasi tertentu.
+
+| Komponen               | Deskripsi                                                                       |
+| ---------------------- | ------------------------------------------------------------------------------- |
+| **Application Server** | Menjalankan logika bisnis dan layanan aplikasi.                                 |
+| **Database Server**    | Menyimpan serta mengelola data yang digunakan oleh sistem.                      |
+| **Media Penyimpanan**  | Menyediakan ruang penyimpanan untuk data dan dokumen yang dikelola oleh sistem. |
+
+Lingkungan operasional tersebut menjadi dasar bagi pelaksanaan seluruh fungsi BHT-Nexus yang telah dijelaskan pada bagian sebelumnya. Dengan lingkungan operasional yang bersifat terpusat, berbasis web, dan mendukung akses melalui jaringan internet, sistem diharapkan mampu memberikan layanan yang konsisten kepada seluruh pengguna sesuai dengan peran dan kewenangannya. Spesifikasi teknis yang berkaitan dengan teknologi implementasi, perangkat lunak pendukung, maupun infrastruktur pengembangan tidak dibahas pada bagian ini karena akan disesuaikan dengan keputusan desain dan implementasi yang ditetapkan pada tahap pengembangan sistem.
+
+#### Design and Implementation Constraints
+
+BHT-Nexus dikembangkan dengan mempertimbangkan sejumlah batasan desain dan implementasi yang telah ditetapkan selama proses analisis kebutuhan sistem. Batasan tersebut berfungsi sebagai acuan bagi tim pengembang dalam menentukan teknologi, standar pengembangan, serta pendekatan implementasi yang digunakan selama siklus pengembangan perangkat lunak. Dengan adanya batasan ini, proses implementasi diharapkan tetap konsisten, mudah dipelihara, serta selaras dengan kebutuhan operasional CoE BHT.
+
+Batasan yang dijelaskan pada bagian ini tidak dimaksudkan untuk menjelaskan arsitektur perangkat lunak secara rinci, melainkan mendefinisikan teknologi dan standar yang menjadi dasar dalam proses pengembangan BHT-Nexus. Perubahan terhadap teknologi yang digunakan dimungkinkan apabila terdapat kebutuhan pengembangan di masa mendatang, namun perubahan tersebut harus tetap mempertimbangkan kompatibilitas terhadap kebutuhan sistem yang telah didefinisikan dalam dokumen ini.
+
+##### Development Framework
+
+Framework yang digunakan pada BHT-Nexus dipilih untuk mendukung pengembangan aplikasi web modern yang terstruktur, mudah dipelihara, dan mendukung pengembangan berkelanjutan.
+
+| Komponen | Teknologi | Alasan Menjadi Constraint |
+|-----------|-----------|---------------------------|
+| **Frontend Framework** | Next.js 16.2 | Antarmuka web dan satu-satunya klien browser. |
+| **Backend Framework** | NestJS 11 dengan Express bawaan | Satu pintu API publik, otorisasi, orkestrasi *job*, dan promosi data resmi. |
+
+##### Programming Language
+
+Bahasa pemrograman yang digunakan ditetapkan untuk menjaga konsistensi implementasi pada seluruh komponen sistem.
+
+| Komponen | Teknologi | Alasan Menjadi Constraint |
+|-----------|-----------|---------------------------|
+| **API dan web** | Node.js 24 LTS dan TypeScript | Runtime dan bahasa untuk aplikasi web serta API. |
+| **Worker** | Python 3.12 | Runtime untuk *scraper*, pemrosesan dokumen, *embedding*, dan RAG. |
+
+##### Database and Persistence
+
+Komponen penyimpanan data ditentukan untuk mendukung pengelolaan data yang terstruktur, konsisten, dan mudah dipelihara.
+
+| Komponen | Teknologi | Alasan Menjadi Constraint |
+|-----------|-----------|---------------------------|
+| **Database Management System** | PostgreSQL 18 | Basis data utama untuk data resmi, *job*, *staging*, *review*, provenance, dan audit. |
+| **Object Relational Mapping (ORM)** | Drizzle ORM | Akses data dan migrasi skema pada API. |
+| **Antrean awal** | Tabel *job* PostgreSQL | Antrean terkelola tanpa Redis pada tahap awal. |
+| **Pencarian vektor produksi** | PostgreSQL dengan ekstensi `pgvector` | Menyimpan metadata, *chunk*, hak akses, dan indeks RAG. |
+
+##### API and System Integration
+
+Komunikasi antar komponen sistem dilakukan menggunakan mekanisme yang telah ditetapkan sebagai standar implementasi aplikasi.
+
+| Komponen | Teknologi / Standar | Alasan Menjadi Constraint |
+|-----------|---------------------|---------------------------|
+| **API Architecture** | REST API | Digunakan sebagai mekanisme komunikasi antara frontend dan backend karena sederhana, mudah diintegrasikan, serta sesuai dengan kebutuhan sistem. |
+| **Data Format** | JSON | Digunakan sebagai format pertukaran data antar layanan untuk menjaga interoperabilitas sistem. |
+| **Dokumentasi API** | OpenAPI/Swagger | Mendokumentasikan kontrak API yang dipakai web dan worker. |
+
+##### File Storage
+
+Pengelolaan dokumen dan berkas dilakukan menggunakan media penyimpanan yang mendukung penyimpanan terpusat dan mudah diakses oleh aplikasi.
+
+| Komponen | Teknologi | Alasan Menjadi Constraint |
+|-----------|-----------|---------------------------|
+| **Penyimpanan awal** | Volume server melalui *storage adapter* | Menyimpan berkas dan artefak besar di luar basis data; metadata dan hak akses disimpan di PostgreSQL. |
+
+##### Development Tools
+
+Proses pengembangan perangkat lunak menggunakan sejumlah alat bantu yang mendukung kolaborasi, konsistensi kode, serta otomatisasi proses pengembangan.
+
+| Komponen | Teknologi | Alasan Menjadi Constraint |
+|-----------|-----------|---------------------------|
+| **Version Control** | Git | Digunakan untuk mengelola perubahan kode sumber secara kolaboratif. |
+| **Containerization** | Docker | Digunakan untuk menjaga konsistensi lingkungan pengembangan dan proses distribusi aplikasi. |
+| **Code Formatter** | Prettier | Digunakan untuk menjaga konsistensi format penulisan kode pada seluruh proyek. |
+| **Linter** | ESLint | Digunakan untuk memastikan kualitas kode sesuai standar yang telah ditetapkan. |
+
+##### Development Standards
+
+Selain teknologi yang digunakan, pengembangan BHT-Nexus juga mengikuti sejumlah standar implementasi untuk menjaga konsistensi desain perangkat lunak selama proses pengembangan.
+
+| Standar | Deskripsi |
+|----------|-----------|
+| **Application Architecture** | Pengembangan sistem mengikuti arsitektur aplikasi yang modular sehingga setiap komponen memiliki tanggung jawab yang jelas dan mudah dipelihara. |
+| **Naming Convention** | Penamaan komponen, variabel, fungsi, maupun struktur data mengikuti konvensi yang disepakati oleh tim pengembang agar konsisten pada seluruh proyek. |
+| **Source Code Documentation** | Dokumentasi kode dilakukan secara konsisten untuk mempermudah proses pengembangan maupun pemeliharaan sistem. |
+| **API Documentation** | Seluruh layanan API didokumentasikan menggunakan standar dokumentasi yang telah ditetapkan agar memudahkan proses integrasi dan pengujian. |
+
+Batasan desain dan implementasi tersebut menjadi acuan selama proses pengembangan BHT-Nexus untuk memastikan seluruh komponen perangkat lunak dikembangkan secara konsisten, mudah dipelihara, serta mampu mendukung kebutuhan operasional CoE BHT. Detail mengenai arsitektur perangkat lunak, struktur komponen, konfigurasi lingkungan pengembangan, maupun mekanisme implementasi akan dijelaskan lebih lanjut pada dokumen *Software Architecture Document (SAD)* dan dokumentasi teknis yang berkaitan dengan proses pengembangan sistem.
+
+### 2.4 User Characteristics
 
 BHT-Nexus dikembangkan untuk mendukung proses bisnis *Center of Excellence Biomedical and Healthcare Technologies* (CoE BHT) yang melibatkan berbagai pihak dengan tingkat keterlibatan dan kebutuhan yang berbeda. Oleh karena itu, identifikasi pengguna sistem tidak dilakukan secara langsung berdasarkan peran aplikasi, melainkan diawali dengan pemetaan stakeholder organisasi, kebutuhan masing-masing stakeholder, serta layanan bisnis yang menjadi ruang lingkup BHT-Nexus. Pendekatan ini memastikan bahwa setiap pengguna sistem yang diidentifikasi memiliki hubungan yang jelas dengan proses bisnis CoE BHT sehingga kebutuhan fungsional yang dirumuskan pada dokumen ini tetap selaras dengan tujuan organisasi dan tidak keluar dari ruang lingkup sistem.
 
@@ -318,13 +446,13 @@ Tidak seluruh stakeholder berinteraksi secara langsung dengan BHT-Nexus. Oleh ka
 
 Karakteristik setiap pengguna disusun berdasarkan tujuan penggunaan sistem, tingkat keterlibatan terhadap proses bisnis CoE BHT, serta kebutuhan layanan yang didukung oleh BHT-Nexus.
 
-| User Class                    | Tujuan Penggunaan                                 | Frekuensi       | Tingkat Teknis  | Fokus Interaksi                                               |
-| ----------------------------- | ------------------------------------------------- | --------------- | --------------- | ------------------------------------------------------------- |
-| **Pengurus CoE**              | Mengelola dan memonitor seluruh aktivitas CoE BHT | Tinggi          | Menengah–Tinggi | Pengelolaan aktivitas, monitoring, dokumentasi, dan pelaporan |
-| **Member CoE**                | Mendukung aktivitas riset dan kolaborasi          | Menengah–Tinggi | Menengah        | Pengelolaan aktivitas penelitian dan dokumentasi              |
-| **Mahasiswa Internship**      | Mendukung pelaksanaan kegiatan magang             | Menengah        | Dasar–Menengah  | Pelaksanaan aktivitas dan akses informasi                     |
-| **Institusi Internal Tel-U**  | Mendukung kolaborasi akademik                     | Rendah–Menengah | Menengah        | Akses informasi dan kolaborasi                                |
-| **Institusi Eksternal Tel-U** | Mendukung kerja sama eksternal                    | Rendah          | Menengah        | Informasi dan pengajuan kerja sama                            |
+| User Class                    | Tujuan Penggunaan                                 | Pola Penggunaan dan Tingkat Teknis | Fokus Interaksi                                               |
+| ----------------------------- | ------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------- |
+| **Pengurus CoE**              | Mengelola dan memonitor seluruh aktivitas CoE BHT | Sering; teknis menengah–tinggi     | Pengelolaan aktivitas, monitoring, dokumentasi, dan pelaporan |
+| **Member CoE**                | Mendukung aktivitas riset dan kolaborasi          | Cukup sering; teknis menengah      | Pengelolaan aktivitas penelitian dan dokumentasi              |
+| **Mahasiswa Internship**      | Mendukung pelaksanaan kegiatan magang             | Berkala; teknis dasar–menengah     | Pelaksanaan aktivitas dan akses informasi                     |
+| **Institusi Internal Tel-U**  | Mendukung kolaborasi akademik                     | Sesuai kebutuhan; teknis menengah  | Akses informasi dan kolaborasi                                |
+| **Institusi Eksternal Tel-U** | Mendukung kerja sama eksternal                    | Sesuai kebutuhan; teknis menengah  | Informasi dan pengajuan kerja sama                            |
 
 Bagian ini menunjukkan bahwa identifikasi pengguna BHT-Nexus tidak hanya mempertimbangkan struktur organisasi CoE BHT, tetapi juga hubungan antara kebutuhan stakeholder, layanan bisnis yang didukung sistem, serta karakteristik masing-masing pengguna. Dengan demikian, setiap kebutuhan fungsional yang akan dijelaskan pada Bab 3 dapat ditelusuri secara jelas dari kebutuhan organisasi hingga pengguna yang memanfaatkan fungsi tersebut.
 
@@ -333,6 +461,7 @@ Untuk memperjelas hubungan antara stakeholder, kebutuhan bisnis, layanan yang di
 Diagram dibaca dari atas ke bawah. Tujuannya menunjukkan bahwa kebutuhan pada Bab 3 tidak muncul begitu saja, melainkan berasal dari pihak yang membutuhkan, kebutuhan organisasi, dan layanan yang perlu didukung.
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Arial","fontSize":"17px","lineColor":"#52606D"},"flowchart":{"curve":"linear","nodeSpacing":34,"rankSpacing":38,"htmlLabels":true}}}%%
 flowchart TB
     subgraph Sources["1. Pihak yang membutuhkan"]
         direction LR
@@ -369,132 +498,9 @@ flowchart TB
     class Requirement verify;
 ```
 
-### 2.4 Operating Environment
+*Gambar 3. Hubungan antara pihak yang membutuhkan, kebutuhan organisasi, fungsi produk, dan kebutuhan yang dapat diuji.*
 
-BHT-Nexus dirancang sebagai sistem informasi berbasis web yang beroperasi pada lingkungan *client-server* dan dapat diakses oleh pengguna melalui jaringan internet sesuai dengan hak akses yang dimiliki. Lingkungan operasional ini dipilih untuk mendukung kebutuhan akses yang fleksibel bagi berbagai kelompok pengguna, baik yang berada di lingkungan Telkom University maupun pihak eksternal yang terlibat dalam aktivitas CoE BHT. Dengan pendekatan tersebut, sistem diharapkan mampu menyediakan layanan secara terpusat sehingga pengelolaan informasi, aktivitas, dan dokumentasi dapat dilakukan secara konsisten oleh seluruh pengguna yang berwenang.
-
-Lingkungan operasional BHT-Nexus terdiri atas beberapa komponen utama yang saling mendukung agar sistem dapat berjalan dengan baik. Komponen tersebut meliputi lingkungan pengguna (*client environment*), lingkungan aplikasi (*application environment*), lingkungan jaringan (*network environment*), serta lingkungan server (*server environment*). Masing-masing lingkungan memiliki fungsi yang berbeda, namun secara bersama-sama membentuk ekosistem operasional yang mendukung pelaksanaan layanan BHT-Nexus.
-
-#### Client Environment
-
-Lingkungan pengguna merupakan perangkat yang digunakan untuk mengakses BHT-Nexus. Sistem dirancang agar dapat diakses melalui *web browser* modern pada berbagai jenis perangkat tanpa memerlukan instalasi aplikasi khusus.
-
-| Komponen                | Deskripsi                                                                                                         |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| **Perangkat Pengguna**  | Desktop, laptop, tablet, atau smartphone yang mendukung akses melalui peramban web.                               |
-| **Media Akses**         | Peramban (*web browser*) modern yang mendukung standar web terkini.                                               |
-| **Karakteristik Akses** | Mendukung akses lintas perangkat (*cross-platform*) dengan antarmuka yang responsif sesuai ukuran layar pengguna. |
-
-#### Application Environment
-
-BHT-Nexus dikembangkan sebagai aplikasi berbasis web yang menggunakan pendekatan *client-server*, sehingga seluruh proses pengelolaan data dilakukan secara terpusat dan dapat diakses oleh banyak pengguna secara bersamaan.
-
-| Komponen                   | Deskripsi                                           |
-| -------------------------- | --------------------------------------------------- |
-| **Jenis Aplikasi**         | Sistem informasi berbasis web.                      |
-| **Arsitektur Operasional** | Client-server.                                      |
-| **Karakteristik Sistem**   | Multi-user dengan pengelolaan data secara terpusat. |
-
-#### Network Environment
-
-Akses terhadap BHT-Nexus dilakukan melalui jaringan yang mendukung komunikasi data antara pengguna dan server aplikasi. Ketersediaan koneksi jaringan yang stabil diperlukan untuk menjaga kelancaran proses pertukaran data selama sistem digunakan.
-
-| Komponen              | Deskripsi                                                                                      |
-| --------------------- | ---------------------------------------------------------------------------------------------- |
-| **Media Jaringan**    | Internet.                                                                                      |
-| **Komunikasi Data**   | Mendukung komunikasi data secara aman antara pengguna dan sistem.                              |
-| **Kebutuhan Koneksi** | Memerlukan koneksi jaringan yang stabil agar seluruh layanan sistem dapat diakses dengan baik. |
-
-#### Server Environment
-
-Lingkungan server menyediakan layanan yang diperlukan agar BHT-Nexus dapat beroperasi sebagai sistem informasi terpusat. Pada tahap ini, lingkungan server dijelaskan secara konseptual tanpa mengacu pada teknologi maupun platform implementasi tertentu.
-
-| Komponen               | Deskripsi                                                                       |
-| ---------------------- | ------------------------------------------------------------------------------- |
-| **Application Server** | Menjalankan logika bisnis dan layanan aplikasi.                                 |
-| **Database Server**    | Menyimpan serta mengelola data yang digunakan oleh sistem.                      |
-| **Media Penyimpanan**  | Menyediakan ruang penyimpanan untuk data dan dokumen yang dikelola oleh sistem. |
-
-Lingkungan operasional tersebut menjadi dasar bagi pelaksanaan seluruh fungsi BHT-Nexus yang telah dijelaskan pada bagian sebelumnya. Dengan lingkungan operasional yang bersifat terpusat, berbasis web, dan mendukung akses melalui jaringan internet, sistem diharapkan mampu memberikan layanan yang konsisten kepada seluruh pengguna sesuai dengan peran dan kewenangannya. Spesifikasi teknis yang berkaitan dengan teknologi implementasi, perangkat lunak pendukung, maupun infrastruktur pengembangan tidak dibahas pada bagian ini karena akan disesuaikan dengan keputusan desain dan implementasi yang ditetapkan pada tahap pengembangan sistem.
-
-### 2.5 Design and Implementation Constraints
-
-BHT-Nexus dikembangkan dengan mempertimbangkan sejumlah batasan desain dan implementasi yang telah ditetapkan selama proses analisis kebutuhan sistem. Batasan tersebut berfungsi sebagai acuan bagi tim pengembang dalam menentukan teknologi, standar pengembangan, serta pendekatan implementasi yang digunakan selama siklus pengembangan perangkat lunak. Dengan adanya batasan ini, proses implementasi diharapkan tetap konsisten, mudah dipelihara, serta selaras dengan kebutuhan operasional CoE BHT.
-
-Batasan yang dijelaskan pada bagian ini tidak dimaksudkan untuk menjelaskan arsitektur perangkat lunak secara rinci, melainkan mendefinisikan teknologi dan standar yang menjadi dasar dalam proses pengembangan BHT-Nexus. Perubahan terhadap teknologi yang digunakan dimungkinkan apabila terdapat kebutuhan pengembangan di masa mendatang, namun perubahan tersebut harus tetap mempertimbangkan kompatibilitas terhadap kebutuhan sistem yang telah didefinisikan dalam dokumen ini.
-
-#### Development Framework
-
-Framework yang digunakan pada BHT-Nexus dipilih untuk mendukung pengembangan aplikasi web modern yang terstruktur, mudah dipelihara, dan mendukung pengembangan berkelanjutan.
-
-| Komponen | Teknologi | Alasan Menjadi Constraint |
-|-----------|-----------|---------------------------|
-| **Frontend Framework** | Next.js 16.2 | Antarmuka web dan satu-satunya klien browser. |
-| **Backend Framework** | NestJS 11 dengan Express bawaan | Satu pintu API publik, otorisasi, orkestrasi *job*, dan promosi data resmi. |
-
-#### Programming Language
-
-Bahasa pemrograman yang digunakan ditetapkan untuk menjaga konsistensi implementasi pada seluruh komponen sistem.
-
-| Komponen | Teknologi | Alasan Menjadi Constraint |
-|-----------|-----------|---------------------------|
-| **API dan web** | Node.js 24 LTS dan TypeScript | Runtime dan bahasa untuk aplikasi web serta API. |
-| **Worker** | Python 3.12 | Runtime untuk *scraper*, pemrosesan dokumen, *embedding*, dan RAG. |
-
-#### Database and Persistence
-
-Komponen penyimpanan data ditentukan untuk mendukung pengelolaan data yang terstruktur, konsisten, dan mudah dipelihara.
-
-| Komponen | Teknologi | Alasan Menjadi Constraint |
-|-----------|-----------|---------------------------|
-| **Database Management System** | PostgreSQL 18 | Basis data utama untuk data resmi, *job*, *staging*, *review*, provenance, dan audit. |
-| **Object Relational Mapping (ORM)** | Drizzle ORM | Akses data dan migrasi skema pada API. |
-| **Antrean awal** | Tabel *job* PostgreSQL | Antrean terkelola tanpa Redis pada tahap awal. |
-| **Pencarian vektor produksi** | PostgreSQL dengan ekstensi `pgvector` | Menyimpan metadata, *chunk*, hak akses, dan indeks RAG. |
-
-#### API and System Integration
-
-Komunikasi antar komponen sistem dilakukan menggunakan mekanisme yang telah ditetapkan sebagai standar implementasi aplikasi.
-
-| Komponen | Teknologi / Standar | Alasan Menjadi Constraint |
-|-----------|---------------------|---------------------------|
-| **API Architecture** | REST API | Digunakan sebagai mekanisme komunikasi antara frontend dan backend karena sederhana, mudah diintegrasikan, serta sesuai dengan kebutuhan sistem. |
-| **Data Format** | JSON | Digunakan sebagai format pertukaran data antar layanan untuk menjaga interoperabilitas sistem. |
-| **Dokumentasi API** | OpenAPI/Swagger | Mendokumentasikan kontrak API yang dipakai web dan worker. |
-
-#### File Storage
-
-Pengelolaan dokumen dan berkas dilakukan menggunakan media penyimpanan yang mendukung penyimpanan terpusat dan mudah diakses oleh aplikasi.
-
-| Komponen | Teknologi | Alasan Menjadi Constraint |
-|-----------|-----------|---------------------------|
-| **Penyimpanan awal** | Volume server melalui *storage adapter* | Menyimpan berkas dan artefak besar di luar basis data; metadata dan hak akses disimpan di PostgreSQL. |
-
-#### Development Tools
-
-Proses pengembangan perangkat lunak menggunakan sejumlah alat bantu yang mendukung kolaborasi, konsistensi kode, serta otomatisasi proses pengembangan.
-
-| Komponen | Teknologi | Alasan Menjadi Constraint |
-|-----------|-----------|---------------------------|
-| **Version Control** | Git | Digunakan untuk mengelola perubahan kode sumber secara kolaboratif. |
-| **Containerization** | Docker | Digunakan untuk menjaga konsistensi lingkungan pengembangan dan proses distribusi aplikasi. |
-| **Code Formatter** | Prettier | Digunakan untuk menjaga konsistensi format penulisan kode pada seluruh proyek. |
-| **Linter** | ESLint | Digunakan untuk memastikan kualitas kode sesuai standar yang telah ditetapkan. |
-
-#### Development Standards
-
-Selain teknologi yang digunakan, pengembangan BHT-Nexus juga mengikuti sejumlah standar implementasi untuk menjaga konsistensi desain perangkat lunak selama proses pengembangan.
-
-| Standar | Deskripsi |
-|----------|-----------|
-| **Application Architecture** | Pengembangan sistem mengikuti arsitektur aplikasi yang modular sehingga setiap komponen memiliki tanggung jawab yang jelas dan mudah dipelihara. |
-| **Naming Convention** | Penamaan komponen, variabel, fungsi, maupun struktur data mengikuti konvensi yang disepakati oleh tim pengembang agar konsisten pada seluruh proyek. |
-| **Source Code Documentation** | Dokumentasi kode dilakukan secara konsisten untuk mempermudah proses pengembangan maupun pemeliharaan sistem. |
-| **API Documentation** | Seluruh layanan API didokumentasikan menggunakan standar dokumentasi yang telah ditetapkan agar memudahkan proses integrasi dan pengujian. |
-
-Batasan desain dan implementasi tersebut menjadi acuan selama proses pengembangan BHT-Nexus untuk memastikan seluruh komponen perangkat lunak dikembangkan secara konsisten, mudah dipelihara, serta mampu mendukung kebutuhan operasional CoE BHT. Detail mengenai arsitektur perangkat lunak, struktur komponen, konfigurasi lingkungan pengembangan, maupun mekanisme implementasi akan dijelaskan lebih lanjut pada dokumen *Software Architecture Document (SAD)* dan dokumentasi teknis yang berkaitan dengan proses pengembangan sistem.
-
-### 2.6 Assumptions and Dependencies
+### 2.5 Assumptions and Dependencies
 
 | Asumsi atau ketergantungan | Dampak jika tidak tersedia | Mitigasi |
 | --- | --- | --- |
@@ -502,7 +508,9 @@ Batasan desain dan implementasi tersebut menjadi acuan selama proses pengembanga
 | PostgreSQL, volume server, dan worker tersedia. | *Job* tidak dapat diproses atau hasil tidak tersimpan. | Pantau antrean, status worker, dan gunakan pemulihan *job*. |
 | Reviewer berwenang tersedia. | Kandidat tidak dapat menjadi data resmi atau sumber RAG. | Tampilkan antrean review dan catat keputusan audit. |
 
-### 2.7 Release Priorities
+### 2.6 Apportioning of Requirements
+
+Bagian ini membagi kebutuhan ke dalam tahapan pelaksanaan agar tim mengetahui kemampuan mana yang dibangun lebih dahulu dan bukti apa yang harus tersedia sebelum berpindah ke tahap berikutnya.
 
 Pengembangan BHT-Nexus dilakukan secara bertahap agar setiap kemampuan baru dibangun di atas fondasi yang telah diuji. Urutan berikut merupakan prioritas rilis, bukan jadwal tanggal tetap. Suatu tahap hanya dapat dilanjutkan apabila syarat pada tahap sebelumnya telah terpenuhi dan bukti pengujiannya dapat ditinjau oleh tim.
 
@@ -599,7 +607,7 @@ SINTA, Google Scholar, dan Crossref semuanya merupakan sumber publik *best-effor
 - Verification Method: Test
 - More Information: -
 
-### 3.2 Functions
+### 3.2 Functional
 
 Bagian ini mendefinisikan kebutuhan fungsional BHT-Nexus yang mencakup pengelolaan data inti, pemeriksaan data, pelaporan, serta dua kemampuan otomatisasi yang saat ini telah memiliki POC, yaitu pengumpulan data akademik (*academic data scraper*) dan tanya jawab dokumen berbasis *Retrieval-Augmented Generation* (RAG). *Scraper* berperan sebagai komponen pengumpul kandidat data dari sumber eksternal, sedangkan RAG memungkinkan pengguna memperoleh informasi dari dokumen internal melalui pertanyaan dalam bahasa sehari-hari. Keduanya tetap berada di belakang API dan tidak dapat mengubah data resmi tanpa pemeriksaan pengguna berwenang.
 
@@ -736,7 +744,7 @@ Komponen pengumpulan data akademik bertanggung jawab mengambil metadata profil p
 - ID: REQ-FUNC-001
 - Title: Pengumpulan Metadata Profil dari SINTA
 - Statement: Sistem wajib mengumpulkan metadata profil *author* dari halaman publik SINTA, meliputi nama, *source ID*, institusi, departemen, dan URL profil.
-- Rationale: Informasi profil peneliti dari SINTA diperlukan untuk mengidentifikasi dan menghubungkan data publikasi dengan anggota CoE BHT secara akurat.
+- Rationale: Profil peneliti dari SINTA diperlukan agar data publikasi dapat dihubungkan dengan anggota CoE BHT secara akurat.
 - Acceptance Criteria:
   - Sistem berhasil mengekstrak nama, *source ID*, institusi, departemen, dan URL profil dari halaman profil SINTA yang valid.
   - Data yang diekstrak disimpan sebagai kandidat pada *staging* PostgreSQL dengan provenance.
@@ -793,7 +801,13 @@ Komponen pengumpulan data akademik bertanggung jawab mengambil metadata profil p
 - Rationale: Pekerjaan berat tidak boleh memblokir API atau bergantung pada CLI sebagai jalur produk.
 - Acceptance Criteria:
   - API mengembalikan `job_id` dan status awal.
-  - Status minimum adalah `queued`, `running`, `succeeded`, `failed`, `retrying`, dan `failed_permanently`.
+  - Status minimum mencakup:
+    - `queued` (menunggu diproses);
+    - `running` (sedang berjalan);
+    - `succeeded` (berhasil);
+    - `failed` (gagal);
+    - `retrying` (sedang dicoba kembali); dan
+    - `failed_permanently` (gagal setelah batas percobaan tercapai).
   - Frontend memperoleh status hanya melalui NestJS API.
 - Verification Method: Integration Test
 - More Information: CLI tetap dapat dipakai sebagai alat pengembangan atau POC, bukan antarmuka produksi.
@@ -1130,7 +1144,7 @@ Komponen *Retrieval-Augmented Generation* (RAG) memungkinkan pengguna mengajukan
 
 - ID: REQ-DEADLINE-001
 - Title: Penyelesaian Berdasarkan Tahap
-- Statement: Pekerjaan wajib mengikuti urutan prioritas pada Bagian 2.7 dan tidak boleh menyatakan suatu tahap selesai sebelum kriteria penerimaan serta bukti pengujiannya tersedia.
+- Statement: Pekerjaan wajib mengikuti urutan prioritas pada Bagian 2.6 dan tidak boleh menyatakan suatu tahap selesai sebelum kriteria penerimaan serta bukti pengujiannya tersedia.
 - Rationale: Target waktu yang cepat tidak boleh menghasilkan fitur yang tampak selesai tetapi belum aman, belum dapat dipulihkan, atau belum dapat ditelusuri.
 - Acceptance Criteria:
   - Setiap tahap memiliki ruang lingkup, penanggung jawab, kriteria selesai, dan bukti pemeriksaan.
@@ -1177,13 +1191,15 @@ Komponen *Retrieval-Augmented Generation* (RAG) memungkinkan pengguna mengajukan
 
 Komponen RAG pada BHT-Nexus menggunakan model lokal pada tahap POC, sedangkan model produksi dipilih melalui evaluasi kualitas, privasi, lisensi, kapasitas, dan biaya. Indeks produksi disimpan pada PostgreSQL dengan ekstensi `pgvector`; model, *chunking*, dan indeks harus dapat ditelusuri versinya.
 
-| Komponen | Model | Tujuan |
-| -------- | ----- | ------ |
-| **Generasi Jawaban POC** | `llama3.2:3b` melalui Ollama | Baseline lokal yang wajib dievaluasi sebelum penggunaan produksi |
-| ***Embedding* POC** | `sentence-transformers/paraphrase-multilingual-mpnet-base-v2` | Baseline multibahasa yang wajib dievaluasi |
-| ***Embedding* kandidat** | `multilingual-e5-base` | Kandidat evaluasi terhadap dataset bilingual yang disetujui |
-| ***Vector Store* (POC)** | FAISS lokal dengan metadata SQLite | Menyimpan dan mengindeks vektor dokumen untuk pencarian efisien pada tahap POC |
-| ***Vector Store* produksi** | PostgreSQL dengan ekstensi `pgvector` | Menyimpan metadata, *chunk*, hak akses, dan indeks yang disetujui |
+| Komponen | Pilihan dan tujuan |
+| -------- | ------------------ |
+| **Generasi Jawaban POC** | `llama3.2:3b` melalui Ollama sebagai *baseline* lokal yang wajib dievaluasi sebelum penggunaan produksi. |
+| ***Embedding* POC** | MPNet multibahasa dari Sentence Transformers sebagai *baseline* yang wajib dievaluasi. |
+| ***Embedding* kandidat** | `multilingual-e5-base` sebagai kandidat evaluasi terhadap *dataset* bilingual yang disetujui. |
+| ***Vector Store* (POC)** | FAISS lokal dengan metadata SQLite untuk menyimpan dan mengindeks vektor dokumen pada tahap POC. |
+| ***Vector Store* produksi** | PostgreSQL dengan ekstensi `pgvector` untuk menyimpan metadata, *chunk*, hak akses, dan indeks yang disetujui. |
+
+Model *embedding* POC tersebut dicatat dengan pengenal lengkap [sentence-transformers/paraphrase-multilingual-mpnet-base-v2](https://huggingface.co/sentence-transformers/paraphrase-multilingual-mpnet-base-v2) agar eksperimen dapat diulang dengan model yang sama.
 
 - ID: REQ-ML-001-2
 - Title: Evaluasi dan Versi Model Generasi
@@ -1388,7 +1404,7 @@ Perbedaan tidak diselesaikan dengan menghapus repository atau menimpa riwayat. K
 
 | Area | Status |
 | --- | --- |
-| **SRS** | Versi 1.2.0 telah dilengkapi dan menunggu review serta persetujuan tim. |
+| **SRS** | Versi 1.2.1 telah dilengkapi, disesuaikan dengan template SRS yang disepakati tim, dan menunggu review serta persetujuan. |
 | **API NestJS** | Fondasi dapat dipasang, diuji, dan dibangun; fitur bisnis serta PostgreSQL belum terintegrasi penuh. |
 | **Package manager dan pola folder rinci** | Masih dibahas melalui issue atau ADR dan bukan keputusan kebutuhan produk. |
 | **Web Next.js** | Belum ditetapkan sebagai fondasi produk pada repository aktif yang disepakati bersama. |

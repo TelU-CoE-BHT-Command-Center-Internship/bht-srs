@@ -7,7 +7,7 @@ Terima kasih telah membantu menyempurnakan dokumentasi kebutuhan BHT-Nexus. Repo
 | Berkas | Kegunaan |
 | --- | --- |
 | `bht-nexus-srs.md` | Sumber utama SRS BHT-Nexus yang dapat diperbarui melalui pull request. |
-| `output/pdf/bht-nexus-srs-v1.2.0.pdf` | Versi PDF yang siap dibaca dan dibagikan. |
+| `output/pdf/bht-nexus-srs-v1.2.1.pdf` | Versi PDF yang siap dibaca dan dibagikan. |
 | `srs-guide.md` | Panduan isi untuk setiap bagian SRS. |
 | `prompt-srs-guide.md` | Format penulisan setiap kebutuhan agar dapat diuji. |
 | `eyd.md` | Acuan ejaan dan penulisan bahasa Indonesia. |
@@ -42,7 +42,7 @@ Merge ke main
 
 Gunakan nama branch yang langsung menjelaskan pekerjaannya, misalnya:
 
-- `docs/srs-v1.2.0` untuk revisi dokumen;
+- `docs/srs-v1.2.1` untuk revisi dokumen;
 - `fix/requirement-traceability` untuk memperbaiki keterlacakan kebutuhan; atau
 - `chore/repository-hygiene` untuk perawatan repository.
 
